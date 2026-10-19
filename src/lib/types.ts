@@ -76,6 +76,7 @@ export interface EvalRequest {
   reviewedByStudent: boolean;
   reviewedByEvaluator: boolean;
   updatedAt?: Timestamp;
+  completedAt?: Timestamp;
 }
 
 export interface Message {

@@ -82,6 +82,11 @@ function Thread({ id }: { id: string }) {
           <span className="font-semibold">{other.name}</span>
         </Link>
         <span className="chip">{t(`st_${r.status}`)}</span>
+        {r.status === "completed" && (
+          <Link href={`/inbox/${id}/certificate`} className="btn-ghost py-1.5">
+            {t("certificate")}
+          </Link>
+        )}
         <Link href={`/p/${r.projectId}`} className="ml-auto max-w-[45%] truncate text-sm text-brand underline">
           {r.projectTitle}
         </Link>

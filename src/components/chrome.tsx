@@ -32,7 +32,7 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur print:hidden">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
         <Logo />
         <nav aria-label="Main" className="order-3 flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto">
@@ -91,7 +91,7 @@ export function Header() {
 export function Footer() {
   const { t } = useApp();
   return (
-    <footer className="border-t border-line bg-white">
+    <footer className="border-t border-line bg-white print:hidden">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted">
         <p>{t("madeBy")}</p>
         <nav className="flex gap-4">
