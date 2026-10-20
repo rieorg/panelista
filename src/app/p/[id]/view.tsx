@@ -88,6 +88,9 @@ export function ProjectView({ id }: { id: string }) {
             <Link href={`/me/projects/${id}/edit`} className="btn-ghost">
               {t("editProject")}
             </Link>
+            <Link href={`/p/${id}/results`} className="btn-ghost">
+              {t("isoResults")}
+            </Link>
             <Link href="/evaluators" className="btn-primary">
               {t("ctaFind")}
             </Link>

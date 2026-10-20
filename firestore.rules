@@ -57,6 +57,15 @@ service cloud.firestore {
       }
     }
 
+    // ISO 25010 answers: the evaluator who wrote them and the student they are for.
+    // Written only by the API. Students list their project's set by studentUid.
+    match /evaluations/{rid} {
+      // resource == null: checking that a not-yet-submitted form is missing reveals nothing.
+      allow get: if (signedIn() && (resource == null || request.auth.uid == resource.data.evaluatorUid || request.auth.uid == resource.data.studentUid)) || isAdmin();
+      // Queries must filter on the caller's studentUid (rules check the query, not each doc).
+      allow list: if (signedIn() && request.auth.uid == resource.data.studentUid) || isAdmin();
+    }
+
     match /verifications/{uid} {
       allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
     }

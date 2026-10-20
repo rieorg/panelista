@@ -3,6 +3,7 @@ import { Suspense, use, useEffect, useState } from "react";
 import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { interpret, tabulate, type IsoScores } from "@/lib/iso25010";
 import type { EvalRequest, Profile } from "@/lib/types";
 import { useApp } from "@/components/app-provider";
 import { RequireProfile } from "@/components/guard";
@@ -12,6 +13,7 @@ function Certificate({ id }: { id: string }) {
   const { t, lang } = useApp();
   const [r, setR] = useState<EvalRequest | null | undefined>(undefined);
   const [evaluator, setEvaluator] = useState<Profile | null | undefined>(undefined);
+  const [overall, setOverall] = useState<number | null>(null);
   const evaluatorUid = r?.status === "completed" ? r.evaluatorUid : undefined;
 
   useEffect(() => {
@@ -20,7 +22,9 @@ function Certificate({ id }: { id: string }) {
   useEffect(() => {
     if (!evaluatorUid) return;
     getDoc(doc(db, "profiles", evaluatorUid)).then((s) => setEvaluator(s.exists() ? ({ uid: s.id, ...s.data() } as Profile) : null), () => setEvaluator(null));
-  }, [evaluatorUid]);
+    // The built-in ISO 25010 answers, if the evaluator used them.
+    getDoc(doc(db, "evaluations", id)).then((s) => setOverall(s.exists() ? tabulate([s.get("scores") as Partial<IsoScores>]).overall : null), () => setOverall(null));
+  }, [evaluatorUid, id]);
 
   if (r === undefined || (evaluatorUid && evaluator === undefined)) return <Spinner />;
   if (r === null) return <Empty img="empty-inbox" text={t("notFound")} />;
@@ -69,9 +73,12 @@ function Certificate({ id }: { id: string }) {
 
         <p className="font-semibold">{t("certCompleted", { d: fmtDate(r.completedAt ?? r.updatedAt, lang) })}</p>
 
+        {overall !== null && <p>{t("certScore", { m: overall.toFixed(2), i: interpret(overall) })}</p>}
+
         <div className="flex max-w-md flex-col gap-1 border-t border-line pt-6 text-xs text-muted">
           <p>{t("certNote")}</p>
           <p>{t("certRef", { id })}</p>
+          <p className="break-all">{t("certVerify", { url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://panelista.vercel.app"}/c/${id}` })}</p>
         </div>
       </article>
     </div>

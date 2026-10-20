@@ -101,6 +101,13 @@ export const mails = {
       ? note(t, `Expired: ${titleOf(r)}`, [`Expired na po ang offer niyo para sa "${titleOf(r)}". Di po nakasagot si ${them} within 3 days.`, "Thank you pa rin po! Marami pa pong capstones dito:"], `${SITE}/projects`)
       : note(t, `Expired: ${titleOf(r)}`, [`Expired na ang request mo kay ${them} para sa "${titleOf(r)}", walang reply within 3 days.`, "Don't worry, marami pang evaluators. Hanap ka ng iba dito:"], `${SITE}/evaluators`);
   },
+  /** First ISO 25010 submission: the student's computed results are ready. */
+  evaluated(r: MailReq, projectId: string): Note {
+    return note(to(r, r.studentUid), `ISO 25010 results: ${titleOf(r)}`, [
+      `Na-submit na ni ${nameOf(r, r.evaluatorUid)} ang ISO 25010 evaluation para sa "${titleOf(r)}"!`,
+      "Computed na ang weighted means para sa Chapter 4 mo, nandito:",
+    ], `${SITE}/p/${projectId}/results`);
+  },
   /** The evaluator let too many invites expire and no longer takes new ones. */
   away(uid: string, name: string, missed: number): Note {
     const t = { uid, name: plain(name), panelist: true };

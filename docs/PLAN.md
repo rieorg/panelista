@@ -138,5 +138,7 @@ or Workers KV for rate limits, email notifications via a Worker queue.
    evaluators had never answered one.
 4. Done 2026-10-19 (PR #8): printable "certificate of evaluation" page per completed request.
 5. Done 2026-10-16: moved to the dedicated Firebase project `panelista-riecodes`.
-6. Next: evaluation workspace (built-in ISO 25010 form, tabulated weighted means,
-   a certificate schools can verify).
+6. Done 2026-10-20: evaluation workspace. Built-in ISO 25010 form (8 characteristics,
+   31 items, 1 to 5) for evaluators, a results page with weighted means per item,
+   per characteristic and overall plus verbal interpretation and a Copy table for
+   Chapter 4, and a public /c/{id} check linked from the printed certificate.

@@ -1,5 +1,6 @@
 import type { Timestamp } from "firebase/firestore";
 import type { Category, RequestStatus, Side } from "./domain";
+import type { IsoScores } from "./iso25010";
 
 export interface Profile {
   uid: string;
@@ -88,6 +89,19 @@ export interface Message {
   text: string;
   system?: RequestStatus;
   createdAt?: Timestamp;
+}
+
+/** One evaluator's ISO 25010 answers for one request (doc id = request id). */
+export interface Evaluation {
+  id: string;
+  requestId: string;
+  projectId: string;
+  studentUid: string;
+  evaluatorUid: string;
+  evaluatorName: string;
+  scores: Partial<IsoScores>;
+  comments: string;
+  updatedAt?: Timestamp;
 }
 
 export interface Review {

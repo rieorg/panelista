@@ -6,6 +6,7 @@ import { sniff } from "../worker/src/sniff.ts";
 import { fieldKey, translate } from "../src/lib/i18n.ts";
 import { findEvaluators, NO_FILTERS, type EvaluatorSort } from "../src/lib/evaluators.ts";
 import type { Profile } from "../src/lib/types.ts";
+import { interpret, ISO25010, ISO_ITEM_IDS, tabulate, toTsv } from "../src/lib/iso25010.ts";
 
 const base: RequestLike = { status: "pending", initiatedBy: "student", studentUid: "S", evaluatorUid: "E" };
 
@@ -88,6 +89,26 @@ test("rank: ignored invites sink a silent evaluator below new and active ones", 
   assert.ok(rankScore(0, 0, false, 9, 1) > rankScore(0, 0, false, 1, 1), "one miss hurts less with a long record");
   assert.equal(rankFor({ evalRatingSum: 10, evalRatingCount: 2, verified: true, responseCount: 4, missedCount: 1 }), rankScore(10, 2, true, 4, 1));
   assert.equal(rankFor({}), 4);
+});
+
+test("ISO 25010: 8 characteristics, 31 items, weighted means and interpretation", () => {
+  assert.equal(ISO25010.length, 8);
+  assert.equal(ISO_ITEM_IDS.length, 31);
+  assert.equal(new Set(ISO_ITEM_IDS).size, 31, "item ids are unique");
+  const all = (x: number) => Object.fromEntries(ISO_ITEM_IDS.map((k) => [k, x]));
+  const t = tabulate([all(5), all(4), { ...all(3), fs1: 5 }]);
+  assert.equal(t.n, 3);
+  assert.equal(t.characteristics[0].items[0].mean, 4.67, "fs1: (5+4+5)/3");
+  assert.equal(t.characteristics[0].items[1].mean, 4, "fs2: (5+4+3)/3");
+  assert.equal(t.characteristics[0].mean, 4.22, "mean of 4.67, 4, 4");
+  assert.equal(interpret(4.21), "Excellent");
+  assert.equal(interpret(4.2), "Very Good");
+  assert.equal(interpret(3.41), "Very Good");
+  assert.equal(interpret(2.61), "Good");
+  assert.equal(interpret(1.81), "Fair");
+  assert.equal(interpret(1.8), "Poor");
+  assert.equal(tabulate([]).overall, 0);
+  assert.match(toTsv(t), /^Indicator\tWeighted mean\tInterpretation\nFunctional suitability\t4\.22\tExcellent\n  Functional completeness\t4\.67\tExcellent/);
 });
 
 test("demo logins are kept off public text", () => {

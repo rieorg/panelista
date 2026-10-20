@@ -28,6 +28,9 @@ function Thread({ id }: { id: string }) {
     if (!projectId) return;
     getDoc(doc(db, "projects", projectId)).then((s) => setFormUrl((s.get("formUrl") as string) ?? ""), () => setFormUrl(""));
   }, [projectId]);
+  // Whether the evaluator has submitted the built-in ISO 25010 form for this request.
+  const [evaluated, setEvaluated] = useState(false);
+  useEffect(() => onSnapshot(doc(db, "evaluations", id), (s) => setEvaluated(s.exists()), () => setEvaluated(false)), [id]);
   useEffect(
     () =>
       onSnapshot(query(collection(db, "requests", id, "messages"), orderBy("createdAt"), limitToLast(200)), (s) => {
@@ -91,17 +94,29 @@ function Thread({ id }: { id: string }) {
           {r.projectTitle}
         </Link>
       </header>
-      {canChat && formUrl !== null && (formUrl || side === "student") && (
+      {canChat && formUrl !== null && (
         <div className="flex flex-wrap items-center gap-2 border-b border-line bg-brand-soft/50 p-3 text-sm">
-          {formUrl ? (
-            <FormLink href={formUrl} />
+          {formUrl && <FormLink href={formUrl} />}
+          {side === "evaluator" ? (
+            <Link href={`/inbox/${id}/evaluate`} className={formUrl ? "btn-ghost" : "btn-primary"}>
+              {t(evaluated ? "isoEdit" : "isoFill")}
+            </Link>
           ) : (
-            <p>
-              {t("noFormOwner")}{" "}
-              <Link href={`/me/projects/${r.projectId}/edit`} className="font-semibold text-brand underline">
-                {t("addForm")}
-              </Link>
-            </p>
+            <>
+              {!formUrl && (
+                <p>
+                  {t("noFormOwner")}{" "}
+                  <Link href={`/me/projects/${r.projectId}/edit`} className="font-semibold text-brand underline">
+                    {t("addForm")}
+                  </Link>
+                </p>
+              )}
+              {evaluated && (
+                <Link href={`/p/${r.projectId}/results`} className="btn-primary">
+                  {t("isoResults")}
+                </Link>
+              )}
+            </>
           )}
         </div>
       )}

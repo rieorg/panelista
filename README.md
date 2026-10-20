@@ -37,6 +37,13 @@ Cloudflare Worker panelista-worker
     then POST /api/cron (Bearer CRON_SECRET) so the app expires requests and emails people
 ```
 
+Evaluation workspace (`src/lib/iso25010.ts`): an accepted evaluator can fill the
+built-in ISO 25010 form (8 characteristics, 31 items, 1 to 5) from the chat.
+The student's `/p/{id}/results` page tabulates every submission into weighted means
+per item, per characteristic and overall, with verbal interpretation and a Copy table
+button for Chapter 4. The printed certificate links to a public `/c/{requestId}` check
+that shows only completed requests, the names, the date and the overall mean.
+
 Email notifications (`src/lib/mail.ts`, Gmail SMTP with an app password in
 `SMTP_USER` and `SMTP_PASSWORD`; nothing is sent without them):
 
@@ -59,6 +66,7 @@ the app. The Worker uses its own service account with only `roles/datastore.user
 | `requests/{projectId_evaluatorUid}` | the two participants, admin | API (state machine); participants may only bump the inbox preview |
 | `requests/*/messages/*` | participants, admin | participants once accepted (rules check sender, size, status, verified email) |
 | `reviews/{requestId_side}` | public | API, once per side after completion |
+| `evaluations/{requestId}` | that request's evaluator and student, admin | API (evaluator only, while accepted or completed) |
 | `verifications/{uid}` | owner, admin | API |
 | `reports/*` | admin | API |
 | `ratelimits/*` | nobody | API |

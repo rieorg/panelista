@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CATEGORIES } from "./domain";
+import { ISO_ITEM_IDS, type IsoItemId } from "./iso25010";
 
 // Validation at the trust boundary (API routes). Clients never write these
 // collections directly; Firestore rules deny it.
@@ -59,6 +60,13 @@ export const createRequestSchema = z.object({
 });
 
 export const actionSchema = z.object({ action: z.enum(["accept", "decline", "cancel", "complete"]) });
+
+// Every one of the 31 ISO 25010 items, 1 to 5 (a record with enum keys requires them all).
+export const evaluationSchema = z.object({
+  requestId: id(200),
+  scores: z.record(z.enum(ISO_ITEM_IDS as [IsoItemId, ...IsoItemId[]]), z.number().int().min(1).max(5)),
+  comments: text(1500),
+});
 
 export const REVIEW_TAGS = ["fast", "helpful", "detailed", "professional", "kind", "organized", "on-time", "clear"] as const;
 export const reviewSchema = z.object({
