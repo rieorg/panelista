@@ -66,7 +66,7 @@ test("counts read as words: 1 yr, 3 yrs", () => {
   assert.equal(translate("en", "neededCount", { a: 0, n: 1 }), "0/1 evaluator");
   assert.equal(translate("en", "ratingsCount", { n: 2 }), "2 ratings");
   assert.equal(translate("en", "answerRate", { a: 3, n: 4 }), "Answered 3 of 4 requests");
-  assert.equal(translate("tl", "sys_accepted", { name: "Ana" }), "Tinanggap ni Ana ang request");
+  assert.equal(translate("tl", "sys_accepted", { name: "Ana" }), "Na-accept ni Ana ang request");
 });
 
 test("terminal states are terminal", () => {

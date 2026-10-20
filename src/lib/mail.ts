@@ -2,14 +2,12 @@ import "server-only";
 import { after } from "next/server";
 import nodemailer from "nodemailer";
 import type { Action, Side } from "./domain";
-import { translate } from "./i18n";
 import { adminAuth } from "./server";
 
 // Email notifications: Gmail SMTP with an app password on SMTP_USER. Without
 // SMTP_USER and SMTP_PASSWORD (local dev, forks) nothing is sent.
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://panelista.vercel.app";
-const FOOTER = "\n\n--\nPanelista: libreng capstone evaluators. Huwag magpadala ng pera o password kahit kanino.";
 
 export type Note = { uid: string; subject: string; text: string };
 
@@ -32,46 +30,84 @@ const titleOf = (r: MailReq) => plain(r.projectTitle);
 const answerer = (r: MailReq) => (r.initiatedBy === "student" ? r.evaluatorUid : r.studentUid);
 const initiator = (r: MailReq) => other(r, answerer(r));
 
-/** One plain-text mail about a request: the news, then the link. Titles are user text, so no line breaks in the subject. */
-const note = (uid: string, subject: string, body: string, url: string): Note => ({
-  uid,
+// Who gets a mail: uid, name for the greeting, and the register. Same split as the UI
+// strings in i18n.ts: panelists get "po", students get everyday Taglish without it.
+type To = { uid: string; name: string; panelist: boolean };
+const to = (r: MailReq, uid: string): To => ({ uid, name: nameOf(r, uid), panelist: uid === r.evaluatorUid });
+
+/** One plain-text mail: greeting, the news, the link on its own line, the owner's sign-off. */
+const note = (t: To, subject: string, lines: string[], url: string): Note => ({
+  uid: t.uid,
   subject: `${subject} · Panelista`.replace(/[\r\n]+/g, " "),
-  text: `${body}\n\nBuksan: ${url}${FOOTER}`,
+  text: [
+    `Hi ${t.name.trim().split(/\s+/)[0]}!`,
+    "",
+    ...lines,
+    url,
+    "",
+    t.panelist ? "May tanong po? Reply lang po kayo dito." : "May tanong? Reply ka lang dito.",
+    "Eirmon",
+    "",
+    "--",
+    "Libre ang Panelista. Wag magpadala ng pera o password kahit kanino.",
+  ].join("\n"),
 });
 
 const inbox = (r: MailReq) => `${SITE}/inbox/${r.id}`;
-
-const SUBJECT: Record<Action, string> = { accept: "Accepted", decline: "Declined", cancel: "Cancelled", complete: "Tapos na" };
-const STATUS_OF = { accept: "accepted", decline: "declined", cancel: "cancelled", complete: "completed" } as const;
+const SUBJECT: Record<Action, string> = { accept: "Accepted", decline: "Declined", cancel: "Cancelled", complete: "Done na" };
 
 export const mails = {
   /** A new request goes to the side that must answer it. */
   created(r: MailReq): Note {
     const from = nameOf(r, initiator(r));
-    return r.initiatedBy === "student"
-      ? note(answerer(r), `Bagong evaluation request: ${titleOf(r)}`, `Si ${from} ay humihingi ng evaluation para sa capstone nila, "${titleOf(r)}". Pakisagot (Accept o Decline) within 3 days, kung hindi mag-e-expire ito.`, inbox(r))
-      : note(answerer(r), `May nag-offer na mag-evaluate: ${titleOf(r)}`, `Si ${from} ay nag-offer na i-evaluate ang "${titleOf(r)}". Pakisagot within 3 days, kung hindi mag-e-expire ito.`, inbox(r));
+    const t = to(r, answerer(r));
+    return t.panelist
+      ? note(t, `Capstone evaluation request: ${titleOf(r)}`, [`May capstone evaluation request po kayo from ${from}:`, `"${titleOf(r)}"`, "", "Pa-accept or decline lang po within 3 days, para di mag-expire:"], inbox(r))
+      : note(t, `May offer ka: ${titleOf(r)}`, [`${from} wants to evaluate your capstone!`, `"${titleOf(r)}"`, "", "Accept or decline mo lang within 3 days, para di mag-expire:"], inbox(r));
   },
   /** Accept, decline, cancel or done: tells the other participant. */
   action(r: MailReq, actorUid: string, action: Action): Note {
-    const to = other(r, actorUid);
-    // Same words as the chat notice: "Tinanggap ni Ben ang request".
-    const did = translate("tl", `sys_${STATUS_OF[action]}`, { name: nameOf(r, actorUid) });
-    const rate = action === "complete" && to === r.studentUid ? " I-rate mo siya: required ito bago ka mag-post o mag-request ulit." : "";
-    return note(to, `${SUBJECT[action]}: ${titleOf(r)}`, `${did} para sa "${titleOf(r)}".${rate}`, inbox(r));
+    const t = to(r, other(r, actorUid));
+    const name = nameOf(r, actorUid);
+    const title = `"${titleOf(r)}"`;
+    const [lines, url] = t.panelist
+      ? ({
+          accept: [[`Na-accept po ni ${name} ang offer niyo para sa ${title}!`, "Pwede na po kayong mag-chat dito:"], inbox(r)],
+          decline: [[`Na-decline po ni ${name} ang offer niyo para sa ${title}.`, "Thank you pa rin po sa pag-offer! Marami pa pong capstones dito:"], `${SITE}/projects`],
+          cancel: [[`Na-cancel po ni ${name} ang evaluation para sa ${title}.`, "Details po dito:"], inbox(r)],
+          complete: [[`Done na po ang evaluation para sa ${title}, sabi ni ${name}. Thank you po!`, "Pwede niyo rin po siyang i-rate dito:"], inbox(r)],
+        } as const)[action]
+      : ({
+          accept: [[`Na-accept ni ${name} ang request mo para sa ${title}!`, "Chat na kayo dito:"], inbox(r)],
+          decline: [[`Na-decline ni ${name} ang request mo para sa ${title}.`, "Don't worry, marami pang evaluators. Request ka lang ulit dito:"], `${SITE}/evaluators`],
+          cancel: [[`Na-cancel ni ${name} ang evaluation para sa ${title}.`, "Details dito:"], inbox(r)],
+          complete: [[`Done na daw ang evaluation ni ${name} para sa ${title}!`, "Rate mo siya dito. Required 'to bago ka mag-post or mag-request ulit:"], inbox(r)],
+        } as const)[action];
+    return note(t, `${SUBJECT[action]}: ${titleOf(r)}`, [...lines], url);
   },
   /** Day 2 of 3: nudges the side that has not answered. */
   reminder(r: MailReq): Note {
-    return note(answerer(r), `Paalala: ${titleOf(r)}`, `Hindi mo pa nasasagot ang request ni ${nameOf(r, initiator(r))} para sa "${titleOf(r)}". Mag-e-expire ito bukas.`, inbox(r));
+    const from = nameOf(r, initiator(r));
+    const t = to(r, answerer(r));
+    return t.panelist
+      ? note(t, `Reminder: ${titleOf(r)}`, [`Reminder lang po: may request pa from ${from} para sa "${titleOf(r)}".`, "Bukas na po ito mag-e-expire. Pa-accept or decline lang po dito:"], inbox(r))
+      : note(t, `Reminder: ${titleOf(r)}`, [`Reminder lang: di mo pa nasasagot ang offer ni ${from} para sa "${titleOf(r)}".`, "Bukas na 'to mag-e-expire. Sagutin mo lang dito:"], inbox(r));
   },
   /** Day 3: the asker learns it lapsed and can ask someone else. */
   expired(r: MailReq): Note {
-    const url = r.initiatedBy === "student" ? `${SITE}/evaluators` : `${SITE}/projects`;
-    return note(initiator(r), `Nag-expire: ${titleOf(r)}`, `Nag-expire ang request kay ${nameOf(r, answerer(r))} para sa "${titleOf(r)}": walang sagot sa loob ng 3 araw. Pwede kang humanap ng iba.`, url);
+    const them = nameOf(r, answerer(r));
+    const t = to(r, initiator(r));
+    return t.panelist
+      ? note(t, `Expired: ${titleOf(r)}`, [`Expired na po ang offer niyo para sa "${titleOf(r)}". Di po nakasagot si ${them} within 3 days.`, "Thank you pa rin po! Marami pa pong capstones dito:"], `${SITE}/projects`)
+      : note(t, `Expired: ${titleOf(r)}`, [`Expired na ang request mo kay ${them} para sa "${titleOf(r)}", walang reply within 3 days.`, "Don't worry, marami pang evaluators. Hanap ka ng iba dito:"], `${SITE}/evaluators`);
   },
   /** The evaluator let too many invites expire and no longer takes new ones. */
-  away(uid: string, missed: number): Note {
-    return note(uid, "Naka-Away ka muna", `Na-set ka namin sa Away kasi ${missed} request ang nag-expire nang walang sagot, kaya hindi ka muna makakatanggap ng bago. I-on ulit ang "Tumatanggap ng requests" sa profile mo pag ready ka na.`, `${SITE}/me?tab=profile`);
+  away(uid: string, name: string, missed: number): Note {
+    const t = { uid, name: plain(name), panelist: true };
+    return note(t, "Naka-Away po muna kayo", [
+      `Naka-Away po muna kayo sa Panelista kasi ${missed} requests ang nag-expire nang walang reply, kaya wala po munang bagong requests.`,
+      `Pag ready na po kayo, pa-on lang ulit ang "Accepting requests ngayon" sa profile niyo:`,
+    ], `${SITE}/me?tab=profile`);
   },
 };
 

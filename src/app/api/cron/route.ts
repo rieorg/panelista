@@ -35,7 +35,7 @@ async function expire(ref: DocumentReference): Promise<Note[]> {
       const streak = ((ev.get("missedStreak") as number) ?? 0) + (fresh ? 1 : 0);
       const away = streak >= AWAY_AFTER && ev.get("accepting") === true;
       tx.update(evalRef, { missedCount: missed, missedStreak: streak, rank: rankFor({ ...ev.data(), missedCount: missed }), ...(away ? { accepting: false } : {}) });
-      if (away) notes.push(mails.away(r.evaluatorUid, streak));
+      if (away) notes.push(mails.away(r.evaluatorUid, r.evaluatorName, streak));
     }
     // lastSender "" marks the thread unread for both sides.
     tx.update(ref, { status: "expired", updatedAt: now, lastMessage: "[expired]", lastSender: "", lastMessageAt: now });
