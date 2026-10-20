@@ -49,8 +49,7 @@ Email notifications (`src/lib/mail.ts`, Gmail SMTP with an app password in
 
 - new request or offer: to the side that must answer
 - accept, decline, cancel, done: to the other side (done asks the student to rate)
-- day 2 of 3 unanswered: a reminder to the side that must answer (`/api/cron`)
-- day 3: the request expires with a chat notice and a mail to the asker. An
+- day 3 unanswered: the request expires (`/api/cron`) with a chat notice and a mail to the asker. An
   evaluator who lets 2 invites in a row expire is set to Away (accepting off) and told how to come back.
 
 Why this split: Firebase stays on the free Spark plan (no Cloud Functions, no

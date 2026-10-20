@@ -15,7 +15,7 @@ export default function Privacy() {
       <ul className="list-disc pl-6">
         <li>Your Google account name, email and photo when you sign in. Your email is never shown to other users.</li>
         <li>
-          We email you about your own requests only: a new request, an answer, a reminder before it expires, and when it expires. Evaluators who let
+          We email you about your own requests only: a new request, an answer, and when it expires. Evaluators who let
           requests expire are set to Away.
         </li>
         <li>What you type into your profile, projects, chats and reviews. Profiles, projects and reviews are public.</li>

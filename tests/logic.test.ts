@@ -1,7 +1,7 @@
 // Run: npm test  (Node 24 strips TS types natively; no test framework needed)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { average, isStale, looksLikeSecret, projectStatusFor, rankFor, rankScore, requestId, responseLabel, transition, type RequestLike } from "../src/lib/domain.ts";
+import { average, looksLikeSecret, projectStatusFor, rankFor, rankScore, requestId, responseLabel, transition, type RequestLike } from "../src/lib/domain.ts";
 import { sniff } from "../worker/src/sniff.ts";
 import { fieldKey, translate } from "../src/lib/i18n.ts";
 import { findEvaluators, NO_FILTERS, type EvaluatorSort } from "../src/lib/evaluators.ts";
@@ -126,9 +126,6 @@ test("average, labels, staleness, ids", () => {
   assert.equal(responseLabel(1, 3), "hour");
   assert.equal(responseLabel(20, 3), "day");
   assert.equal(responseLabel(50, 3), "days");
-  const day = 864e5;
-  assert.equal(isStale(0, 3.5 * day), true);
-  assert.equal(isStale(0, 2.5 * day), false);
   assert.equal(requestId("p1", "u1"), "p1_u1");
 });
 

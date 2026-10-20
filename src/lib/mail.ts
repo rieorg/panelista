@@ -85,14 +85,6 @@ export const mails = {
         } as const)[action];
     return note(t, `${SUBJECT[action]}: ${titleOf(r)}`, [...lines], url);
   },
-  /** Day 2 of 3: nudges the side that has not answered. */
-  reminder(r: MailReq): Note {
-    const from = nameOf(r, initiator(r));
-    const t = to(r, answerer(r));
-    return t.panelist
-      ? note(t, `Reminder: ${titleOf(r)}`, [`Reminder lang po: may request pa from ${from} para sa "${titleOf(r)}".`, "Bukas na po ito mag-e-expire. Pa-accept or decline lang po dito:"], inbox(r))
-      : note(t, `Reminder: ${titleOf(r)}`, [`Reminder lang: di mo pa nasasagot ang offer ni ${from} para sa "${titleOf(r)}".`, "Bukas na 'to mag-e-expire. Sagutin mo lang dito:"], inbox(r));
-  },
   /** Day 3: the asker learns it lapsed and can ask someone else. */
   expired(r: MailReq): Note {
     const them = nameOf(r, answerer(r));

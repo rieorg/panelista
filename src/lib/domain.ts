@@ -31,9 +31,8 @@ export interface RequestLike {
 }
 
 // Unanswered requests expire after 3 days so the student can ask someone else
-// in time; the one who must answer gets a reminder email after 2.
+// in time.
 export const PENDING_TTL_DAYS = 3;
-export const REMIND_AFTER_DAYS = 2;
 // An evaluator who lets this many invites in a row expire is set to Away (accepting off).
 export const AWAY_AFTER = 2;
 
@@ -114,11 +113,6 @@ export function responseLabel(avgHours: number | undefined, count: number): "hou
   if (avgHours <= 2) return "hour";
   if (avgHours <= 24) return "day";
   return "days";
-}
-
-/** True when a pending request is old enough for the cron to expire it. */
-export function isStale(createdAtMs: number, nowMs: number): boolean {
-  return nowMs - createdAtMs > PENDING_TTL_DAYS * 24 * 3600 * 1000;
 }
 
 /** Project status after the accepted count changes. Closed stays closed. */

@@ -1,6 +1,6 @@
 // Panelista Worker: private verification uploads (Workers KV) and the hourly
 // cron that closes past-deadline projects in Firestore and triggers the app's
-// /api/cron (request expiry, reminders and emails).
+// /api/cron (request expiry and its emails).
 import { createRemoteJWKSet, importPKCS8, jwtVerify, SignJWT, type JWTPayload } from "jose";
 import { sniff } from "./sniff";
 

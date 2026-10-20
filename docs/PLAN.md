@@ -84,7 +84,7 @@ Firestore (asia-east1)            Cloudflare Worker panelista-worker
                                       purge rate-limit counters (own SA,
                                       roles/datastore.user only), then call
                                       the app's /api/cron to expire 3-day-old
-                                      pending requests and send reminders
+                                      pending requests and send their emails
 ```
 
 Request state machine (`src/lib/domain.ts`, unit tested): `pending` to
@@ -133,7 +133,8 @@ or Workers KV for rate limits, email notifications via a Worker queue.
 2. Open source: public repo, emulator-based local dev, recruit student maintainers,
    contributors and promoters. Optional custom domain.
 3. Done 2026-10-20: email notifications for request events (not chat messages),
-   3-day expiry with a reminder, Away after 2 ignored invites, rank by answer rate.
+   3-day expiry, Away after 2 ignored invites, rank by answer rate. The day-2
+   reminder email was dropped the same day as too invasive.
    Why first: on 2026-10-20, 123 of 158 requests were pending and 23 of 30
    evaluators had never answered one.
 4. Done 2026-10-19 (PR #8): printable "certificate of evaluation" page per completed request.

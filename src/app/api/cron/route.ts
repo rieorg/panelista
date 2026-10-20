@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import type { DocumentReference, Timestamp } from "firebase-admin/firestore";
 import { db, FieldValue, HttpError, route } from "@/lib/server";
-import { AWAY_AFTER, isStale, rankFor, REMIND_AFTER_DAYS } from "@/lib/domain";
+import { AWAY_AFTER, PENDING_TTL_DAYS, rankFor } from "@/lib/domain";
 import { mails, notify, type MailReq, type Note } from "@/lib/mail";
 
 // Hourly, triggered by the Worker cron with CRON_SECRET. It lives in the app,
@@ -44,45 +44,27 @@ async function expire(ref: DocumentReference): Promise<Note[]> {
   });
 }
 
-/** One reminder per request, only while it is still pending (safe if two cron runs overlap). */
-async function remind(ref: DocumentReference): Promise<Note[]> {
-  return db().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (snap.get("status") !== "pending" || snap.get("remindedAt")) return [];
-    tx.update(ref, { remindedAt: FieldValue.serverTimestamp() });
-    return [mails.reminder({ ...(snap.data() as MailReq), id: ref.id })];
-  });
-}
-
 export const POST = route(
   async (req) => {
     requireCron(req);
-    const now = Date.now();
-    // Pending past the reminder age, oldest first: the stale ones expire, the rest get one reminder.
+    // Pending past the 3-day limit, oldest first. No day-2 reminder mail: dropped 2026-10-20 as too invasive.
     // ponytail: 300 per run; the hourly cron catches up on the rest next hour.
     const due = await db()
       .collection("requests")
       .where("status", "==", "pending")
-      .where("createdAt", "<", new Date(now - REMIND_AFTER_DAYS * 864e5))
+      .where("createdAt", "<", new Date(Date.now() - PENDING_TTL_DAYS * 864e5))
       .orderBy("createdAt")
       .limit(300)
       .get();
     const notes: Note[] = [];
     let expired = 0;
-    let reminded = 0;
     for (const d of due.docs) {
-      if (isStale(d.get("createdAt").toMillis(), now)) {
-        const n = await expire(d.ref);
-        if (n.length) expired++;
-        notes.push(...n);
-      } else if (!d.get("remindedAt")) {
-        const n = await remind(d.ref);
-        reminded += n.length;
-        notes.push(...n);
-      }
+      const n = await expire(d.ref);
+      if (n.length) expired++;
+      notes.push(...n);
     }
     notify(notes);
-    return { expired, reminded, mails: notes.length };
+    return { expired, mails: notes.length };
   },
   { appCheck: false },
 );
