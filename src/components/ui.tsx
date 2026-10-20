@@ -47,15 +47,34 @@ export function Stars({ value, count, size = "sm" }: { value: number; count?: nu
   );
 }
 
-export function VerifiedBadge() {
+// Scalloped seal: a disc plus 10 lobes around it, one at the top.
+const SEAL_LOBES = Array.from({ length: 10 }, (_, i) => {
+  const a = (i * Math.PI) / 5 - Math.PI / 2;
+  return [12 + 8.2 * Math.cos(a), 12 + 8.2 * Math.sin(a)].map((v) => Math.round(v * 100) / 100);
+});
+
+/** Verified mark in Facebook's style (seal with a check, right after the name), in brand green. */
+export function VerifiedBadge({ size = 18, label = false }: { size?: number; label?: boolean }) {
   const { t } = useApp();
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-white">
-      <svg aria-hidden viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+  const seal = (
+    <svg role="img" aria-label={t("verified")} viewBox="0 0 24 24" width={size} height={size} className="inline-block shrink-0 text-brand">
+      <title>{t("verified")}</title>
+      <g fill="currentColor">
+        <circle cx="12" cy="12" r="8.5" />
+        {SEAL_LOBES.map(([x, y]) => (
+          <circle key={`${x},${y}`} cx={x} cy={y} r="2.6" />
+        ))}
+      </g>
+      <path d="M7.7 12.3l2.9 2.9 5.8-6.1" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+  return label ? (
+    <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand">
+      {seal}
       {t("verified")}
     </span>
+  ) : (
+    seal
   );
 }
 

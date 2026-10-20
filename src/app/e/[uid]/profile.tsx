@@ -36,7 +36,7 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold">{p.name}</h1>
-              {p.verified && <VerifiedBadge />}
+              {p.verified && <VerifiedBadge size={24} />}
               {p.isAdmin && <AdminBadge />}
             </div>
             <p className="text-muted">{p.headline}</p>

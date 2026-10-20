@@ -62,7 +62,7 @@ function Certificate({ id }: { id: string }) {
           <p className="text-muted">{t("certEvaluatedBy")}</p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <p className="text-2xl font-bold">{evaluator?.name || r.evaluatorName}</p>
-            {evaluator?.verified && !evaluator.banned && <VerifiedBadge />}
+            {evaluator?.verified && !evaluator.banned && <VerifiedBadge label />}
           </div>
           {evaluator?.headline && <p className="text-muted">{evaluator.headline}</p>}
         </div>
