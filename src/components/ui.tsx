@@ -7,20 +7,15 @@ import { CATEGORY_LABELS, errorKey, fieldKey } from "@/lib/i18n";
 import type { EvalRequest } from "@/lib/types";
 import type { Timestamp } from "firebase/firestore";
 
+// No photo: a DiceBear Notionists face (CC0, same as webinar's chat), seeded by a hash of the name so the same
+// person always gets the same face and the name itself never leaves the site.
+const faceUrl = (name: string) =>
+  `https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${[...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+
 export function Avatar({ src, name, size = 40 }: { src?: string; name: string; size?: number }) {
-  const initials = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-  return src ? (
+  return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" width={size} height={size} referrerPolicy="no-referrer" className="shrink-0 rounded-full bg-brand-soft object-cover" style={{ width: size, height: size }} />
-  ) : (
-    <span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand-soft font-semibold text-brand-dark" style={{ width: size, height: size, fontSize: size / 2.6 }}>
-      {initials || "?"}
-    </span>
+    <img src={src || faceUrl(name)} alt="" width={size} height={size} referrerPolicy="no-referrer" className="shrink-0 rounded-full bg-brand-soft object-cover" style={{ width: size, height: size }} />
   );
 }
 

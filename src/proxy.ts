@@ -11,7 +11,7 @@ export function proxy(request: NextRequest) {
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://apis.google.com${isDev ? " 'unsafe-eval'" : ""};
     style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https://lh3.googleusercontent.com;
+    img-src 'self' blob: data: https://lh3.googleusercontent.com https://api.dicebear.com;
     font-src 'self';
     connect-src 'self' https://*.googleapis.com wss://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://challenges.cloudflare.com ${worker}${emu};
     frame-src 'self' blob: https://accounts.google.com https://*.firebaseapp.com https://challenges.cloudflare.com${emu};
