@@ -50,7 +50,7 @@ Ideas considered (kept: **bold**):
 - **Taglish-first copy with English toggle; FB/Messenger in-app browser warning on Google login.**
 - Paid evaluations / platform fee: dropped (free only; avoids payments, KYC, disputes).
 - Certificate generator for the signed acceptance form: later (schools use their own forms).
-- Email or push notifications: later (inbox unread state ships first).
+- Email or push notifications: later (inbox unread state ships first). Email shipped 2026-10-20.
 - Leaderboards / gamified badges: later, only if engagement needs it.
 
 ## 3. Decisions made
@@ -80,10 +80,11 @@ Firestore (asia-east1)            Cloudflare Worker panelista-worker
   profiles, projects, requests,     - /proofs upload/read/delete in Workers KV
   messages, reviews,                  (magic-byte sniffing, 5 MB, 30-day TTL,
   verifications, reports,              admin-only read, App Check + verified email)
-  ratelimits                        - hourly cron: expire 7-day-old pending
-                                      requests, close past-deadline projects,
+  ratelimits                        - hourly cron: close past-deadline projects,
                                       purge rate-limit counters (own SA,
-                                      roles/datastore.user only)
+                                      roles/datastore.user only), then call
+                                      the app's /api/cron to expire 3-day-old
+                                      pending requests and send reminders
 ```
 
 Request state machine (`src/lib/domain.ts`, unit tested): `pending` to
@@ -131,6 +132,11 @@ or Workers KV for rate limits, email notifications via a Worker queue.
    BSIT Worldwide and IT recruitment groups ("Be a Panelista" link).
 2. Open source: public repo, emulator-based local dev, recruit student maintainers,
    contributors and promoters. Optional custom domain.
-3. Email notifications for new requests and messages.
-4. Printable "certificate of evaluation" page per completed request.
+3. Done 2026-10-20: email notifications for request events (not chat messages),
+   3-day expiry with a reminder, Away after 2 ignored invites, rank by answer rate.
+   Why first: on 2026-10-20, 123 of 158 requests were pending and 23 of 30
+   evaluators had never answered one.
+4. Done 2026-10-19 (PR #8): printable "certificate of evaluation" page per completed request.
 5. Done 2026-10-16: moved to the dedicated Firebase project `panelista-riecodes`.
+6. Next: evaluation workspace (built-in ISO 25010 form, tabulated weighted means,
+   a certificate schools can verify).

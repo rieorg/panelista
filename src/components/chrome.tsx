@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useApp } from "./app-provider";
-import { Avatar, isUnread, useInbox } from "./ui";
+import { AdminBadge, Avatar, isUnread, useInbox } from "./ui";
 
 export function Logo() {
   return (
@@ -60,6 +60,7 @@ export function Header() {
           </button>
           {user ? (
             <>
+              {isAdmin && <AdminBadge className="hidden sm:inline-flex" />}
               <Link href="/me?tab=profile" aria-label={t("navMe")} className="rounded-full">
                 <Avatar src={profile?.photoURL || user.photoURL || ""} name={profile?.name || user.displayName || "?"} size={34} />
               </Link>

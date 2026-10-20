@@ -1,6 +1,6 @@
 import { adminAuth, body, db, FieldValue, HttpError, requireAdmin, route } from "@/lib/server";
 import { adminBanSchema, adminVerifySchema, id } from "@/lib/schemas";
-import { rankScore } from "@/lib/domain";
+import { rankFor } from "@/lib/domain";
 import { z } from "zod";
 
 const schema = z.discriminatedUnion("op", [
@@ -19,7 +19,7 @@ export const POST = route(async (req) => {
       const pRef = db().doc(`profiles/${input.uid}`);
       const p = await tx.get(pRef);
       if (!p.exists) throw new HttpError(404, "not-found");
-      tx.update(pRef, { verified: approve, rank: rankScore(p.get("evalRatingSum") ?? 0, p.get("evalRatingCount") ?? 0, approve) });
+      tx.update(pRef, { verified: approve, rank: rankFor({ ...p.data(), verified: approve }) });
       tx.update(db().doc(`verifications/${input.uid}`), {
         status: approve ? "approved" : "rejected",
         reason: input.reason,

@@ -68,7 +68,10 @@ export function ProjectForm({ existing }: { existing?: Project }) {
         <label className="label" htmlFor="abstract">
           {t("fAbstract")}
         </label>
-        <textarea id="abstract" className="input min-h-32" required minLength={20} maxLength={1500} value={f.abstract} onChange={(e) => set("abstract", e.target.value)} />
+        <textarea id="abstract" className="input min-h-32" required minLength={20} maxLength={1500} value={f.abstract} onChange={(e) => set("abstract", e.target.value)} aria-describedby="abstract-hint" />
+        <p id="abstract-hint" className="mt-1 text-xs text-muted">
+          {t("fAbstractHint")}
+        </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

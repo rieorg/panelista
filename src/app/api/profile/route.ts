@@ -1,6 +1,6 @@
 import { body, db, FieldValue, rateLimit, requireUser, route } from "@/lib/server";
 import { profileSchema } from "@/lib/schemas";
-import { rankScore } from "@/lib/domain";
+import { rankFor, rankScore } from "@/lib/domain";
 
 // Upsert the caller's own profile. Server-owned fields (ratings, verified,
 // counters, banned) are never taken from the client.
@@ -15,6 +15,8 @@ export const PUT = route(async (req) => {
       ...input,
       skillsLower: input.skills.map((s) => s.toLowerCase()),
       photoURL: user.picture ?? "",
+      // Public Admin badge mirrors the custom claim; clients can never write it (rules deny profile writes).
+      isAdmin: user.admin === true,
       updatedAt: FieldValue.serverTimestamp(),
     };
     if (snap.exists) {
@@ -23,7 +25,9 @@ export const PUT = route(async (req) => {
       const unverify = identityChanged && snap.get("verified") === true;
       tx.update(ref, {
         ...base,
-        ...(unverify ? { verified: false, rank: rankScore(snap.get("evalRatingSum") ?? 0, snap.get("evalRatingCount") ?? 0, false) } : {}),
+        ...(unverify ? { verified: false, rank: rankFor({ ...snap.data(), verified: false }) } : {}),
+        // Back from Away (see /api/cron): a fresh start on the expired-invite streak.
+        ...(input.accepting && snap.get("accepting") === false ? { missedStreak: 0, backAt: FieldValue.serverTimestamp() } : {}),
       });
     } else {
       tx.set(ref, {

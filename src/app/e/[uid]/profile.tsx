@@ -7,7 +7,7 @@ import { CATEGORY_LABELS } from "@/lib/i18n";
 import type { Profile, Project, Review } from "@/lib/types";
 import { useApp } from "@/components/app-provider";
 import { useResponseText } from "@/components/cards";
-import { Avatar, Empty, ErrorText, fmtDate, Modal, Spinner, Stars, VerifiedBadge } from "@/components/ui";
+import { AdminBadge, Avatar, Empty, ErrorText, fmtDate, Modal, Spinner, Stars, VerifiedBadge } from "@/components/ui";
 import { ReportButton } from "@/components/report";
 
 export function EvaluatorProfile({ uid }: { uid: string }) {
@@ -37,6 +37,7 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold">{p.name}</h1>
               {p.verified && <VerifiedBadge />}
+              {p.isAdmin && <AdminBadge />}
             </div>
             <p className="text-muted">{p.headline}</p>
             <Stars value={p.evalRatingAvg} count={p.evalRatingCount} size="lg" />
@@ -67,8 +68,9 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
 
         <section className="card flex flex-col gap-3 p-5">
           <h2 className="font-bold">
-            {t("reviews")} ({p.evalRatingCount})
+            {t("reviews")} ({reviews.length < 30 ? reviews.length : "30+"})
           </h2>
+          {reviews.length > p.evalRatingCount && <p className="text-xs text-muted">{t("ratingsNote")}</p>}
           {reviews.length === 0 && <p className="text-sm text-muted">{t("noReviews")}</p>}
           <ul className="flex flex-col divide-y divide-line">
             {reviews.map((r) => (

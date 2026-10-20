@@ -5,10 +5,17 @@ import type { Profile, Project } from "@/lib/types";
 import { useApp } from "./app-provider";
 import { Avatar, CategoryChips, fmtDate, Stars, VerifiedBadge } from "./ui";
 
+/** "Answered 3 of 4 requests · Usually responds within a day"; the rate shows once any invite was answered or let expire. */
 export function useResponseText() {
   const { t } = useApp();
-  return (p: Pick<Profile, "avgResponseHours" | "responseCount">) =>
-    t(({ hour: "respHour", day: "respDay", days: "respDays", new: "respNew" } as const)[responseLabel(p.avgResponseHours, p.responseCount)]);
+  return (p: Pick<Profile, "avgResponseHours" | "responseCount" | "missedCount">) => {
+    const label = responseLabel(p.avgResponseHours, p.responseCount);
+    const speed = t(({ hour: "respHour", day: "respDay", days: "respDays", new: "respNew" } as const)[label]);
+    const asked = p.responseCount + (p.missedCount ?? 0);
+    if (!asked) return speed;
+    const rate = t("answerRate", { a: p.responseCount, n: asked });
+    return label === "new" ? rate : `${rate} · ${speed}`;
+  };
 }
 
 export function EvaluatorCard({ p }: { p: Profile }) {

@@ -64,7 +64,7 @@ function Proof({ file }: { file: Verification["files"][number] }) {
 }
 
 function Admin() {
-  const { isAdmin } = useApp();
+  const { isAdmin, t } = useApp();
   const [vs, setVs] = useState<Verification[] | null>(null);
   const [reports, setReports] = useState<Report[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -117,7 +117,7 @@ function Admin() {
                 {v.name}
               </Link>
               <p className="text-sm text-muted">
-                {v.headline} · {v.yearsExp} yrs {v.linkedin && <a className="underline" href={v.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>}
+                {v.headline} · {t("yearsExp", { n: v.yearsExp })} {v.linkedin && <a className="underline" href={v.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>}
               </p>
               {v.note && <p className="text-sm">{v.note}</p>}
               <div className="flex flex-wrap items-start gap-2">

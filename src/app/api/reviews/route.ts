@@ -1,6 +1,6 @@
 import { adminAuth, body, db, FieldValue, HttpError, requireUser, route } from "@/lib/server";
 import { reviewSchema } from "@/lib/schemas";
-import { average, rankScore, reviewId, sideOf, type RequestLike } from "@/lib/domain";
+import { average, rankFor, reviewId, sideOf, type RequestLike } from "@/lib/domain";
 
 // Marketplace-style two-way rating, allowed once per side after completion.
 const MIN_ACCOUNT_DAYS = 3;
@@ -40,7 +40,7 @@ export const POST = route(async (req) => {
         [`${prefix}Sum`]: sum,
         [`${prefix}Count`]: count,
         [`${prefix}Avg`]: average(sum, count),
-        ...(side === "student" ? { rank: rankScore(sum, count, target.get("verified") === true) } : {}),
+        ...(side === "student" ? { rank: rankFor({ ...target.data(), evalRatingSum: sum, evalRatingCount: count }) } : {}),
       });
     }
     tx.create(revRef, {

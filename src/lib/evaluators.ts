@@ -7,7 +7,8 @@ const replyHours = (p: Profile) => (p.responseCount && p.avgResponseHours !== un
 
 /** Sort orders for the evaluator list. Ties fall back to the other rating number. */
 export const EVALUATOR_SORTS = {
-  rank: (a: Profile, b: Profile) => b.rank - a.rank,
+  // Recommended puts evaluators who take requests (not Away or full) first.
+  rank: (a: Profile, b: Profile) => Number(b.accepting) - Number(a.accepting) || b.rank - a.rank,
   rating: (a: Profile, b: Profile) => b.evalRatingAvg - a.evalRatingAvg || b.evalRatingCount - a.evalRatingCount,
   reviews: (a: Profile, b: Profile) => b.evalRatingCount - a.evalRatingCount || b.evalRatingAvg - a.evalRatingAvg,
   years: (a: Profile, b: Profile) => b.yearsExp - a.yearsExp,

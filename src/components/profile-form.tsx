@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/firebase";
-import { CATEGORIES } from "@/lib/domain";
+import { AWAY_AFTER, CATEGORIES } from "@/lib/domain";
 import { CATEGORY_LABELS } from "@/lib/i18n";
 import { useApp } from "./app-provider";
 import { ErrorText, splitTags } from "./ui";
@@ -107,6 +107,7 @@ export function ProfileForm() {
             <input type="checkbox" checked={f.accepting} onChange={(e) => set("accepting", e.target.checked)} className="h-4 w-4 accent-brand" />
             {t("pAccepting")}
           </label>
+          {!f.accepting && (profile?.missedStreak ?? 0) >= AWAY_AFTER && <p className="text-sm text-muted">{t("awayNote", { n: profile?.missedStreak ?? 0 })}</p>}
           {field("titles", t("pTitles"), 200, { placeholder: "Software Engineer, QA Tester, Registered Nurse" })}
           <div className="grid gap-4 sm:grid-cols-3">
             <div>

@@ -11,8 +11,9 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "panelista-riecodes",
     "FIREBASE_PROJECT_NUMBER": "580867277489",
-    "ALLOWED_ORIGINS": "https://panelista.vercel.app"
+    "ALLOWED_ORIGINS": "https://panelista.vercel.app",
+    "APP_URL": "https://panelista.vercel.app"
   }
-  // Secrets (wrangler secret put): SA_CLIENT_EMAIL, SA_PRIVATE_KEY.
-  // Local dev: put ALLOWED_ORIGINS="http://localhost:3000" in worker/.dev.vars.
+  // Secrets (wrangler secret put): SA_CLIENT_EMAIL, SA_PRIVATE_KEY, CRON_SECRET (same value as in Vercel).
+  // Local dev: put ALLOWED_ORIGINS="http://localhost:3000" and APP_URL="http://localhost:3000" in worker/.dev.vars.
 }

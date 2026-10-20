@@ -22,6 +22,7 @@ export interface Profile {
   accepting: boolean;
   maxActive: number;
   verified: boolean;
+  isAdmin?: boolean;
   banned: boolean;
   evalRatingAvg: number;
   evalRatingCount: number;
@@ -30,6 +31,8 @@ export interface Profile {
   completedCount: number;
   activeCount: number;
   responseCount: number;
+  missedCount?: number;
+  missedStreak?: number;
   avgResponseHours?: number;
   rank: number;
   createdAt?: Timestamp;

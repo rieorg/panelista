@@ -1,6 +1,7 @@
 import { body, db, FieldValue, HttpError, rateLimit, requireNoPendingReview, requireUser, route } from "@/lib/server";
 import { actionSchema } from "@/lib/schemas";
-import { projectStatusFor, sideOf, transition, type RequestLike } from "@/lib/domain";
+import { projectStatusFor, rankFor, sideOf, transition, type RequestLike } from "@/lib/domain";
+import { mails, notify, type MailReq } from "@/lib/mail";
 import type { Timestamp } from "firebase-admin/firestore";
 
 const SYSTEM_TEXT = { accepted: "accepted", declined: "declined", cancelled: "cancelled", completed: "completed" } as const;
@@ -12,10 +13,10 @@ export const POST = route(async (req, ctx) => {
   await rateLimit(user.uid, "action", 100);
   const ref = db().doc(`requests/${id}`);
 
-  await db().runTransaction(async (tx) => {
+  const done = await db().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) throw new HttpError(404, "not-found");
-    const r = snap.data() as RequestLike & { projectId: string; createdAt: Timestamp };
+    const r = snap.data() as RequestLike & MailReq & { projectId: string; createdAt: Timestamp };
     const t = transition(r, user.uid, action);
     if (!t.ok) throw new HttpError(409, t.error);
     if (t.next === "accepted" && sideOf(r, user.uid) === "student") await requireNoPendingReview(user.uid);
@@ -28,12 +29,19 @@ export const POST = route(async (req, ctx) => {
     const projStatus = project.get("status") as "open" | "filled" | "closed";
 
     const evalUpdate: Record<string, unknown> = {};
-    // Responsiveness only counts the evaluator answering a student's invite.
+    // Responsiveness only counts the evaluator answering a student's invite. An answer
+    // also ends a run of expired invites (see /api/cron) and lifts the answer rate in the rank.
     if ((action === "accept" || action === "decline") && sideOf(r, user.uid) === "evaluator") {
       const hours = Math.max(0, (Date.now() - r.createdAt.toMillis()) / 36e5);
       const count = ((evaluator.get("responseCount") as number) ?? 0) + 1;
       const sum = ((evaluator.get("responseHoursSum") as number) ?? 0) + hours;
-      Object.assign(evalUpdate, { responseCount: count, responseHoursSum: sum, avgResponseHours: Math.round((sum / count) * 10) / 10 });
+      Object.assign(evalUpdate, {
+        responseCount: count,
+        responseHoursSum: sum,
+        avgResponseHours: Math.round((sum / count) * 10) / 10,
+        missedStreak: 0,
+        rank: rankFor({ ...evaluator.data(), responseCount: count }),
+      });
     }
 
     if (t.next === "accepted") {
@@ -63,6 +71,9 @@ export const POST = route(async (req, ctx) => {
       ...(t.next === "completed" ? { completedAt: now } : {}),
     });
     tx.set(ref.collection("messages").doc(), { senderUid: user.uid, system: t.next, text: "", createdAt: now });
+    return { r: { ...r, id }, next: t.next, was: r.status };
   });
+  // Withdrawing an unanswered request sends nothing, so cancel/re-ask loops can't spam the other side.
+  if (!(done.next === "cancelled" && done.was === "pending")) notify([mails.action(done.r, user.uid, action)]);
   return { ok: true };
 });

@@ -1,7 +1,7 @@
 // Panelista Worker: private verification uploads (Workers KV) and the hourly
-// cron that expires stale requests and closes past-deadline projects in Firestore.
+// cron that closes past-deadline projects in Firestore and triggers the app's
+// /api/cron (request expiry, reminders and emails).
 import { createRemoteJWKSet, importPKCS8, jwtVerify, SignJWT, type JWTPayload } from "jose";
-import { PENDING_TTL_DAYS } from "../../src/lib/domain";
 import { sniff } from "./sniff";
 
 interface ProofMeta {
@@ -18,6 +18,8 @@ interface Env {
   ALLOWED_ORIGINS: string;
   SA_CLIENT_EMAIL: string;
   SA_PRIVATE_KEY: string;
+  APP_URL: string;
+  CRON_SECRET?: string;
 }
 
 const MAX_BYTES = 5_000_000;
@@ -220,12 +222,18 @@ async function deleteDocs(env: Env, token: string, docs: { name: string }[]) {
 async function cron(env: Env) {
   const token = await googleToken(env);
   const now = new Date();
-  const staleBefore = new Date(now.getTime() - PENDING_TTL_DAYS * 864e5).toISOString();
-  const stale = await runQuery(env, token, "requests", [
-    { field: "status", op: "EQUAL", value: { stringValue: "pending" } },
-    { field: "createdAt", op: "LESS_THAN", value: { timestampValue: staleBefore } },
-  ]);
-  await setStatus(env, token, stale, "expired");
+
+  // Request expiry needs a system message, evaluator counters and emails, so the app does it.
+  let app: unknown = "skipped: no CRON_SECRET";
+  if (!env.CRON_SECRET) console.error("CRON_SECRET missing: requests will not expire");
+  else {
+    // A failing app must not stop the project closing and purge below.
+    const init = { method: "POST", headers: { authorization: `Bearer ${env.CRON_SECRET}` }, signal: AbortSignal.timeout(120_000) };
+    app = await fetch(`${env.APP_URL}/api/cron`, init).then(
+      (res) => (res.ok ? res.json() : `error ${res.status}`),
+      (e) => `error ${e}`,
+    );
+  }
 
   const pastDeadline = await runQuery(env, token, "projects", [
     { field: "status", op: "IN", value: { arrayValue: { values: [{ stringValue: "open" }, { stringValue: "filled" }] } } },
@@ -237,7 +245,7 @@ async function cron(env: Env) {
   const oldLimits = await runQuery(env, token, "ratelimits", [{ field: "expireAt", op: "LESS_THAN", value: { timestampValue: now.toISOString() } }], 500);
   await deleteDocs(env, token, oldLimits);
 
-  console.log(JSON.stringify({ cron: "ok", expired: stale.length, closed: pastDeadline.length }));
+  console.log(JSON.stringify({ cron: "ok", app, closed: pastDeadline.length }));
 }
 
 export default {

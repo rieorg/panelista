@@ -9,14 +9,14 @@ import { useApp } from "@/components/app-provider";
 import { RequireProfile } from "@/components/guard";
 import { ProfileForm } from "@/components/profile-form";
 import { ProjectCard } from "@/components/cards";
-import { Avatar, Empty, ErrorText, isUnread, Spinner, useInbox } from "@/components/ui";
+import { AdminBadge, Avatar, Empty, ErrorText, isUnread, Spinner, useInbox } from "@/components/ui";
 
 const TABS = ["inbox", "projects", "profile", "verify"] as const;
 type Tab = (typeof TABS)[number];
 const TAB_LABEL = { inbox: "tabInbox", projects: "tabProjects", profile: "tabProfile", verify: "tabVerify" } as const;
 
 function MeInner() {
-  const { t, user, profile } = useApp();
+  const { t, user, profile, isAdmin } = useApp();
   const router = useRouter();
   const sp = useSearchParams();
   // New users land on the profile tab, but the inbox stays reachable without one.
@@ -38,8 +38,9 @@ function MeInner() {
             {t(TAB_LABEL[k])}
           </button>
         ))}
+        {isAdmin && <AdminBadge className="ml-auto inline-flex self-center" />}
         {profile && (
-          <Link href={`/e/${user!.uid}`} className="ml-auto self-center whitespace-nowrap px-2 text-sm text-brand underline">
+          <Link href={`/e/${user!.uid}`} className={`${isAdmin ? "" : "ml-auto"} self-center whitespace-nowrap px-2 text-sm text-brand underline`}>
             {t("viewPublic")}
           </Link>
         )}

@@ -30,7 +30,12 @@ export interface RequestLike {
   evaluatorUid: string;
 }
 
-export const PENDING_TTL_DAYS = 7;
+// Unanswered requests expire after 3 days so the student can ask someone else
+// in time; the one who must answer gets a reminder email after 2.
+export const PENDING_TTL_DAYS = 3;
+export const REMIND_AFTER_DAYS = 2;
+// An evaluator who lets this many invites in a row expire is set to Away (accepting off).
+export const AWAY_AFTER = 2;
 
 /** Which side the user is on in this request, or null if not a participant. */
 export function sideOf(r: RequestLike, uid: string): Side | null {
@@ -73,13 +78,30 @@ export const reviewId = (reqId: string, from: Side) => `${reqId}_${from}`;
 
 /**
  * Ranking score: Bayesian average with a prior of 4.0 stars weighted as 3
- * reviews, so one 5-star review does not outrank twenty 4.8s.
+ * reviews, so one 5-star review does not outrank twenty 4.8s. Invites the
+ * evaluator let expire cost up to 0.5 through their answer rate, smoothed so a
+ * new evaluator starts at 100%: a silent account sinks below active ones.
  */
-export function rankScore(sum: number, count: number, verified: boolean): number {
+export function rankScore(sum: number, count: number, verified: boolean, answered = 0, missed = 0): number {
   const PRIOR = 4.0;
   const WEIGHT = 3;
   const bayes = (sum + PRIOR * WEIGHT) / (count + WEIGHT);
-  return Math.round((bayes + (verified ? 0.25 : 0)) * 1000) / 1000;
+  const answerRate = (answered + 1) / (answered + missed + 1);
+  return Math.round((bayes + (verified ? 0.25 : 0) - 0.5 * (1 - answerRate)) * 1000) / 1000;
+}
+
+/** Rank from a stored profile's fields (spread the doc, then override what changes). */
+export function rankFor(p: { evalRatingSum?: number; evalRatingCount?: number; verified?: boolean; responseCount?: number; missedCount?: number }) {
+  return rankScore(p.evalRatingSum ?? 0, p.evalRatingCount ?? 0, p.verified === true, p.responseCount ?? 0, p.missedCount ?? 0);
+}
+
+/**
+ * True when public text looks like it carries a login ("Password: 1234",
+ * "admin@site.com Admin123!"). Demo logins belong in the chat once a request
+ * is accepted, never on a public project page.
+ */
+export function looksLikeSecret(s: string): boolean {
+  return /\b(user ?name|pass(word|wd|code)?|pwd)\s*[:=]/i.test(s) || /[\w.+-]+@[\w-]+(\.[\w-]+)+\s+\S*\d\S*/.test(s);
 }
 
 export function average(sum: number, count: number): number {

@@ -24,8 +24,11 @@ export function Avatar({ src, name, size = 40 }: { src?: string; name: string; s
   );
 }
 
+/** Star row. With count: "5.0 · 2 ratings", or "No ratings yet" instead of five grey stars. */
 export function Stars({ value, count, size = "sm" }: { value: number; count?: number; size?: "sm" | "lg" }) {
+  const { t } = useApp();
   const full = Math.round(value);
+  if (count === 0) return <span className={`text-muted ${size === "lg" ? "text-base" : "text-sm"}`}>{t("noRatings")}</span>;
   return (
     <span className={`inline-flex items-center gap-1 ${size === "lg" ? "text-base" : "text-sm"}`} aria-label={`${value.toFixed(1)} out of 5`}>
       <span aria-hidden className="tracking-tight">
@@ -37,7 +40,7 @@ export function Stars({ value, count, size = "sm" }: { value: number; count?: nu
       </span>
       {count !== undefined && (
         <span className="text-muted">
-          {count ? value.toFixed(1) : ""} ({count})
+          {value.toFixed(1)} · {t("ratingsCount", { n: count })}
         </span>
       )}
     </span>
@@ -52,6 +55,19 @@ export function VerifiedBadge() {
         <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       {t("verified")}
+    </span>
+  );
+}
+
+/** Marks a Panelista admin (custom claim; on public profiles, the server-written isAdmin field). */
+export function AdminBadge({ className = "inline-flex" }: { className?: string }) {
+  const { t } = useApp();
+  return (
+    <span className={`${className} items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-xs font-semibold text-white`}>
+      <svg aria-hidden viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M8 1.5 2.5 3.5v4c0 3.2 2.3 5.9 5.5 7 3.2-1.1 5.5-3.8 5.5-7v-4L8 1.5Z" strokeLinejoin="round" />
+      </svg>
+      {t("adminBadge")}
     </span>
   );
 }

@@ -1,7 +1,7 @@
 // Run: npm test  (Node 24 strips TS types natively; no test framework needed)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { average, isStale, projectStatusFor, rankScore, requestId, responseLabel, transition, type RequestLike } from "../src/lib/domain.ts";
+import { average, isStale, looksLikeSecret, projectStatusFor, rankFor, rankScore, requestId, responseLabel, transition, type RequestLike } from "../src/lib/domain.ts";
 import { sniff } from "../worker/src/sniff.ts";
 import { fieldKey, translate } from "../src/lib/i18n.ts";
 import { findEvaluators, NO_FILTERS, type EvaluatorSort } from "../src/lib/evaluators.ts";
@@ -55,12 +55,17 @@ test("evaluator filters combine; sorts order by the chosen number", () => {
   assert.deepEqual(names({ verified: true, cat: "web" }), ["Ana"]);
   assert.deepEqual(names({ accepting: true }, "reviews"), ["Ana", "Ben"]);
   assert.deepEqual(names({}, "fast"), ["Ben", "Ana", "Cy"], "no reply history sorts last");
+  const away = p({ name: "Dee", rank: 9, accepting: false });
+  assert.deepEqual(findEvaluators([away, ana], NO_FILTERS, "rank").map((x) => x.name), ["Ana", "Dee"], "Away sorts after anyone accepting");
 });
 
 test("counts read as words: 1 yr, 3 yrs", () => {
   assert.equal(translate("en", "minYears", { n: 1 }), "1+ yr exp");
   assert.equal(translate("en", "minYears", { n: 3 }), "3+ yrs exp");
-  assert.equal(translate("en", "evalsDone", { n: 0 }), "0 evaluations");
+  assert.equal(translate("en", "evalsDone", { n: 0 }), "0 evaluations done");
+  assert.equal(translate("en", "neededCount", { a: 0, n: 1 }), "0/1 evaluator");
+  assert.equal(translate("en", "ratingsCount", { n: 2 }), "2 ratings");
+  assert.equal(translate("en", "answerRate", { a: 3, n: 4 }), "Answered 3 of 4 requests");
   assert.equal(translate("tl", "sys_accepted", { name: "Ana" }), "Tinanggap ni Ana ang request");
 });
 
@@ -75,6 +80,24 @@ test("rank: many good reviews beat one perfect review; verified gets a nudge", (
   assert.equal(rankScore(0, 0, false), 4);
 });
 
+test("rank: ignored invites sink a silent evaluator below new and active ones", () => {
+  const ghost = rankScore(0, 0, true, 0, 3); // verified, never answered, 3 expired
+  assert.ok(ghost < rankScore(0, 0, false), "below a brand-new unverified evaluator");
+  assert.ok(ghost < rankScore(10, 2, false, 4, 0), "below an active rated one");
+  assert.equal(rankScore(0, 0, false, 5, 0), 4, "answering everything costs nothing");
+  assert.ok(rankScore(0, 0, false, 9, 1) > rankScore(0, 0, false, 1, 1), "one miss hurts less with a long record");
+  assert.equal(rankFor({ evalRatingSum: 10, evalRatingCount: 2, verified: true, responseCount: 4, missedCount: 1 }), rankScore(10, 2, true, 4, 1));
+  assert.equal(rankFor({}), 4);
+});
+
+test("demo logins are kept off public text", () => {
+  assert.equal(looksLikeSecret("Sample Account: Username: kmocampo@deped.gov.ph Password: 111111"), true);
+  assert.equal(looksLikeSecret("admin: admin@c-point.com Admin123! employee: x"), true);
+  assert.equal(looksLikeSecret("pwd=hunter2"), true);
+  assert.equal(looksLikeSecret("A grading portal with password reset and an early warning system."), false);
+  assert.equal(looksLikeSecret("Contact the team at team@school.edu.ph for a walkthrough."), false);
+});
+
 test("average, labels, staleness, ids", () => {
   assert.equal(average(0, 0), 0);
   assert.equal(average(14, 3), 4.7);
@@ -83,8 +106,8 @@ test("average, labels, staleness, ids", () => {
   assert.equal(responseLabel(20, 3), "day");
   assert.equal(responseLabel(50, 3), "days");
   const day = 864e5;
-  assert.equal(isStale(0, 8 * day), true);
-  assert.equal(isStale(0, 6 * day), false);
+  assert.equal(isStale(0, 3.5 * day), true);
+  assert.equal(isStale(0, 2.5 * day), false);
   assert.equal(requestId("p1", "u1"), "p1_u1");
 });
 
