@@ -1,8 +1,7 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, getDocs, limit, orderBy, query, startAfter, where, type QueryConstraint, type QueryDocumentSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { Timestamp } from "firebase/firestore";
 import { CATEGORIES } from "@/lib/domain";
 import { CATEGORY_LABELS } from "@/lib/i18n";
 import type { Project } from "@/lib/types";
@@ -12,33 +11,27 @@ import { Empty, Spinner } from "@/components/ui";
 
 const PAGE = 24;
 
+/** Open projects, newest first, from the CDN-cached /api/projects (no Firestore read or App Check per visit). */
+async function loadOpenProjects(): Promise<Project[]> {
+  const res = await fetch("/api/projects");
+  if (!res.ok) throw new Error("server");
+  const rows = (await res.json()) as (Omit<Project, "deadline"> & { deadline: number })[];
+  return rows.map((p) => ({ ...p, deadline: Timestamp.fromMillis(p.deadline) }));
+}
+
 export default function ProjectsPage() {
   const { t, user } = useApp();
   const [cat, setCat] = useState("");
-  const [items, setItems] = useState<Project[] | null>(null);
-  const [cursor, setCursor] = useState<QueryDocumentSnapshot | null>(null);
-  const [more, setMore] = useState(false);
-
-  const load = useCallback(
-    async (after: QueryDocumentSnapshot | null) => {
-      const c: QueryConstraint[] = [where("status", "==", "open")];
-      if (cat) c.push(where("categories", "array-contains", cat));
-      c.push(orderBy("createdAt", "desc"), limit(PAGE));
-      if (after) c.push(startAfter(after));
-      const snap = await getDocs(query(collection(db, "projects"), ...c));
-      const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Project);
-      setItems((prev) => (after && prev ? [...prev, ...rows] : rows));
-      setCursor(snap.docs.at(-1) ?? null);
-      setMore(snap.size === PAGE);
-    },
-    [cat],
-  );
+  const [all, setAll] = useState<Project[] | null>(null);
+  const [shownN, setShownN] = useState(PAGE);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- show the loading state while a new filter loads
-    setItems(null);
-    load(null).catch(() => setItems([]));
-  }, [load]);
+    loadOpenProjects().then(setAll, () => setAll([]));
+  }, []);
+
+  const matches = all?.filter((p) => !cat || p.categories.includes(cat as Project["categories"][number])) ?? null;
+  const items = matches?.slice(0, shownN) ?? null;
+  const more = (matches?.length ?? 0) > shownN;
 
   return (
     <div className="flex flex-col gap-5">
@@ -48,7 +41,15 @@ export default function ProjectsPage() {
           {t("ctaPost")}
         </Link>
       </div>
-      <select className="input sm:max-w-[220px]" value={cat} onChange={(e) => setCat(e.target.value)} aria-label={t("allCategories")}>
+      <select
+        className="input sm:max-w-[220px]"
+        value={cat}
+        onChange={(e) => {
+          setCat(e.target.value);
+          setShownN(PAGE);
+        }}
+        aria-label={t("allCategories")}
+      >
         <option value="">{t("allCategories")}</option>
         {CATEGORIES.map((c) => (
           <option key={c} value={c}>
@@ -68,7 +69,7 @@ export default function ProjectsPage() {
         </div>
       )}
       {more && (
-        <button className="btn-ghost mx-auto" onClick={() => load(cursor)}>
+        <button className="btn-ghost mx-auto" onClick={() => setShownN((n) => n + PAGE)}>
           {t("loadMore")}
         </button>
       )}
