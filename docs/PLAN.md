@@ -95,7 +95,7 @@ again; chat opens after acceptance.
 
 ## 5. Security posture
 
-- Strict nonce CSP, HSTS preload, frame denial (except the auth iframe), nosniff,
+- Static allowlist CSP (pages stay on the CDN), HSTS preload, frame denial (except the auth iframe), nosniff,
   Referrer-Policy, Permissions-Policy.
 - Firestore: clients can only read, plus post chat messages in accepted threads;
   public lists must be paged (limit 50 or less); App Check enforced.

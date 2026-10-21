@@ -10,6 +10,8 @@ import { VerifiedBadge } from "@/components/ui";
 export const metadata: Metadata = { title: "Certificate check", robots: { index: false } };
 // Public and unauthenticated: cache each check for 5 minutes to cap Firestore reads.
 export const revalidate = 300;
+// No ids at build time: each check renders on its first visit, then serves from cache.
+export const generateStaticParams = async () => [];
 
 export default async function CertificateCheck({ params }: PageProps<"/c/[id]">) {
   const { id } = await params;

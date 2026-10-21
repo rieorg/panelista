@@ -3,6 +3,9 @@ import { publicDoc } from "@/lib/meta";
 import { translate } from "@/lib/i18n";
 import { ProjectView } from "./view";
 
+// The project loads live in the browser; only the link-preview metadata comes from here, cached an hour.
+export const revalidate = 3600;
+
 export async function generateMetadata({ params }: PageProps<"/p/[id]">): Promise<Metadata> {
   const { id } = await params;
   const p = await publicDoc(`projects/${id}`);

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { collection, getDocs, limit, orderBy, query, startAfter, where, type QueryConstraint, type QueryDocumentSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { Timestamp } from "firebase/firestore";
 import { CATEGORIES } from "@/lib/domain";
 import { EVALUATOR_SORTS, findEvaluators, NO_FILTERS, type EvaluatorSort as Sort } from "@/lib/evaluators";
 import { CATEGORY_LABELS } from "@/lib/i18n";
@@ -11,27 +10,17 @@ import { EvaluatorCard } from "@/components/cards";
 import { Empty, ErrorText, Spinner } from "@/components/ui";
 
 const PAGE = 24;
-const BATCH = 50; // Firestore rules cap public list queries at 50 docs.
-const MAX = 500;
-
 /**
- * Every evaluator, best rank first. Filtering and sorting happen client-side,
- * so any mix of filters works without a composite index per combination.
- * ponytail: reads every evaluator per visit; past MAX, move filters into
- * Firestore queries (one index each) or Typesense/Algolia.
+ * Every evaluator (up to 500), best rank first, from the CDN-cached /api/evaluators.
+ * Filtering and sorting happen client-side, so any mix of filters works without a
+ * composite index per combination.
+ * ponytail: past 500 evaluators, move filters into Firestore queries (one index each) or Typesense/Algolia.
  */
 async function loadEvaluators(): Promise<Profile[]> {
-  const rows: Profile[] = [];
-  let after: QueryDocumentSnapshot | null = null;
-  while (rows.length < MAX) {
-    const c: QueryConstraint[] = [where("isEvaluator", "==", true), orderBy("rank", "desc"), limit(BATCH)];
-    if (after) c.push(startAfter(after));
-    const snap = await getDocs(query(collection(db, "profiles"), ...c));
-    rows.push(...snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as Profile));
-    if (snap.size < BATCH) break;
-    after = snap.docs[snap.docs.length - 1];
-  }
-  return rows;
+  const res = await fetch("/api/evaluators");
+  if (!res.ok) throw new Error("server");
+  const rows = (await res.json()) as (Omit<Profile, "createdAt"> & { createdAt?: number })[];
+  return rows.map((p) => ({ ...p, createdAt: p.createdAt === undefined ? undefined : Timestamp.fromMillis(p.createdAt) }));
 }
 
 const YEARS = [1, 3, 5, 10];

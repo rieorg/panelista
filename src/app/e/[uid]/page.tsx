@@ -3,6 +3,11 @@ import { publicDoc } from "@/lib/meta";
 import { translate } from "@/lib/i18n";
 import { EvaluatorProfile } from "./profile";
 
+// The profile itself loads in the browser; only the link-preview metadata comes from here.
+// Rendered on first visit, cached for an hour, so a shared link costs one Firestore read per hour.
+export const revalidate = 3600;
+export const generateStaticParams = async () => [];
+
 export async function generateMetadata({ params }: PageProps<"/e/[uid]">): Promise<Metadata> {
   const { uid } = await params;
   const p = await publicDoc(`profiles/${uid}`);

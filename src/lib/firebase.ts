@@ -81,7 +81,9 @@ export const appCheck: AppCheck | null =
             return (await res.json()) as { token: string; expireTimeMillis: number };
           },
         }),
-        isTokenAutoRefreshEnabled: true,
+        // On demand, not at page load: a visitor who only browses cached pages never runs
+        // Turnstile or calls /api/appcheck. Firestore and api() fetch a token when they need one.
+        isTokenAutoRefreshEnabled: false,
       });
 
 async function appCheckHeader(): Promise<Record<string, string>> {

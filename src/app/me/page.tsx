@@ -128,6 +128,28 @@ function MyProjects() {
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
+/**
+ * Phone photos and screenshots of proofs become WebP, at most 2000 px on the long side:
+ * often a tenth of the size, and the re-encode drops EXIF (GPS included). Text on an ID
+ * or certificate stays readable. Keeps the original when the browser cannot encode WebP
+ * (Safari falls back to PNG) or the WebP comes out bigger.
+ */
+async function toWebp(file: File): Promise<File> {
+  if (file.type !== "image/jpeg" && file.type !== "image/png") return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+    const canvas = new OffscreenCanvas(Math.round(bmp.width * scale), Math.round(bmp.height * scale));
+    canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    const blob = await canvas.convertToBlob({ type: "image/webp", quality: 0.85 });
+    if (blob.type !== "image/webp" || blob.size >= file.size) return file;
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.webp`, { type: "image/webp" });
+  } catch {
+    return file;
+  }
+}
+
 function Verification() {
   const { t, user, profile } = useApp();
   const [v, setV] = useState<{ status: string; reason?: string } | null | undefined>(undefined);
@@ -158,8 +180,11 @@ function Verification() {
     setErr(null);
     try {
       const uploaded = [];
-      for (const file of files) {
-        if (!ALLOWED.includes(file.type) || file.size > 5_000_000) throw new Error("upload-failed");
+      for (const picked of files) {
+        if (!ALLOWED.includes(picked.type)) throw new Error("upload-failed");
+        // Converted first, so a big phone photo can still fit under the 5 MB cap.
+        const file = await toWebp(picked);
+        if (file.size > 5_000_000) throw new Error("upload-failed");
         const res = await worker("/proofs", { method: "POST", body: file, headers: { "content-type": file.type, "x-file-name": encodeURIComponent(file.name.slice(0, 120)) } });
         const { key } = (await res.json()) as { key: string };
         uploaded.push({ key, name: file.name.slice(0, 120), type: file.type, size: file.size });

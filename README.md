@@ -82,7 +82,8 @@ waiting on one evaluator.
 
 ### Security
 
-- Strict nonce CSP via `src/proxy.ts`, HSTS preload, `X-Frame-Options: DENY`,
+- Static allowlist CSP in `next.config.ts` (so every page prerenders and serves
+  from the CDN), HSTS preload, `X-Frame-Options: DENY`,
   nosniff, Referrer-Policy, Permissions-Policy, COOP for the auth popup.
 - App Check (custom provider backed by Cloudflare Turnstile) enforced on Firestore,
   the API and the Worker: scripts without a real browser session on our site get 401/403.

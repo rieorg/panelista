@@ -58,7 +58,7 @@ GitHub Actions runs the same checks on every pull request.
 - Request rules live in `src/lib/domain.ts` and are tested in
   `tests/logic.test.ts`. Change the test with the rule.
 - These files guard user data and need a maintainer's careful review:
-  `firestore.rules`, `src/lib/server.ts`, `src/proxy.ts`, `next.config.ts`,
+  `firestore.rules`, `src/lib/server.ts`, `next.config.ts`,
   `src/app/api/**` and `worker/`. Explain why in the pull request.
 - AI coding tools are fine, but you must understand and test what you submit.
 - Never commit `.env.local`, service account keys or any other secret.

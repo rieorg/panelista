@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { connection } from "next/server";
 import { AppProvider } from "@/components/app-provider";
 import { Header, Footer } from "@/components/chrome";
 import "./globals.css";
@@ -20,9 +19,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#176B55" };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  // Nonce-based CSP (src/proxy.ts) needs every page rendered per request.
-  await connection();
+// No per-request work here: pages prerender and serve from the CDN (CSP is a static header in next.config.ts).
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // translate="no": Chrome offers to translate "fil" pages, and its DOM rewrites crash
     // React on the next update. The app has its own English toggle.
