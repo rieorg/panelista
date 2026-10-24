@@ -110,6 +110,67 @@ export const mails = {
   },
 };
 
+// The HTML part, drawn from the text: the same renderer as webinar.riecodes.com (lib/mailbank.ts mailHtml), with
+// Panelista's logo and color. The logo over the message, the site under it.
+const BRAND = { name: "Panelista", tagline: "Capstone evaluators", logo: `${SITE}/brand/logo-mark.png`, site: SITE, color: "#176B55" };
+// Button labels by link: the line above the link says why, the button says where it goes.
+const BUTTONS: [RegExp, string][] = [[/\/inbox\//, "Open request"], [/\/results\b/, "View results"], [/\/projects\b/, "Browse capstones"], [/\/evaluators\b/, "Find evaluators"], [/\/me\b/, "Open profile"]];
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+const ALONE = /^https?:\/\/\S+$/;
+// What a link shows when nothing names it: host and path, never the query (keys, tokens) or a long tail.
+const shortUrl = (url: string) => { const bare = url.replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*/, "").replace(/\/$/, ""); return bare.length > 40 ? `${bare.slice(0, 39)}…` : bare; };
+const link = (url: string, label: string) => `<a href="${escapeHtml(url)}" style="color:${BRAND.color};font-weight:600">${escapeHtml(label)}</a>`;
+const button = (url: string, main: boolean) => `<a href="${escapeHtml(url)}" style="display:inline-block;margin-top:8px;padding:${main ? `12px 22px;background:${BRAND.color};color:#ffffff` : `11px 20px;border:1px solid #B9DACE;color:${BRAND.color}`};border-radius:8px;font-weight:600;text-decoration:none">${BUTTONS.find(([pattern]) => pattern.test(url))?.[1] ?? "Open link"}</a>`;
+
+// One line that isn't a bare link. "Label: link" shows the label, not the link: a whole line gets a button under its
+// label, a list item or the last sentence links its words. A link inside a sentence shows shortUrl.
+function line(text: string) {
+  const labelled = text.match(/^(.*\S):\s+(https?:\/\/\S+)$/);
+  if (!labelled) return text.split(/(https?:\/\/\S*[^\s.,)])/).map((part, index) => index % 2 ? link(part, shortUrl(part)) : escapeHtml(part)).join("");
+  const [, label, url] = labelled;
+  const cut = Math.max(label.lastIndexOf(". "), label.lastIndexOf("? "), label.lastIndexOf("! ")) + 2;
+  const lead = cut > 1 ? label.slice(0, cut) : label.startsWith("- ") ? "- " : "";
+  return lead ? escapeHtml(lead) + link(url, label.slice(lead.length)) : `${escapeHtml(label)}:<br>${button(url, false)}`;
+}
+// The lines under a line ending in ":" (the capstone's title): the mail's summary, in a card. The first is the thing
+// itself, in bold, unless it's a list item or holds a link.
+const card = (rows: string[]) => `<div style="margin:8px 0 4px;padding:12px 16px;border-radius:10px;background:#EAF4F0">${rows.map((row, index) => index || /^(- |\d+\. )|https?:/.test(row) ? line(row) : `<strong>${escapeHtml(row)}</strong>`).join("<br>")}</div>`;
+
+// The brand on top, the summary card, and no bare link. The first link on its own line under a line ending in ":"
+// becomes the main button (the call to action); other links get a plain button or their label. The "--" block
+// (the anti-scam line) goes small and grey.
+function mailHtml(text: string) {
+  let main = false;
+  const blocks = text.split(/\n{2,}/).map((block) => {
+    if (block.startsWith("--\n")) return `<span style="font-size:13px;color:#52525B">${line(block.slice(3).replace(/\n/g, " "))}</span>`;
+    const lines = block.split("\n");
+    const parts: string[] = [];
+    for (let index = 0; index < lines.length; index++) {
+      const current = lines[index].trim();
+      if (ALONE.test(current)) {
+        const first = !main && !!lines[index - 1]?.trimEnd().endsWith(":");
+        main ||= first;
+        parts.push(button(current, first));
+        continue;
+      }
+      parts.push(line(lines[index]));
+      let end = index + 1;
+      if (current.endsWith(":")) while (end < lines.length && !ALONE.test(lines[end].trim())) end++;
+      if (end > index + 1) { parts.push(card(lines.slice(index + 1, end))); index = end - 1; }
+    }
+    // A card is a block of its own: no line break next to it.
+    return parts.reduce((html, part, index) => html + (index && !part.startsWith("<div") && !parts[index - 1].startsWith("<div") ? "<br>" : "") + part, "");
+  });
+  // The inbox preview: the line after the greeting, not the header's name.
+  const gist = (text.split(/\n{2,}/)[1] ?? text).replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim().slice(0, 140);
+  const header = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px"><tr><td style="padding:0 10px 0 0"><img src="${BRAND.logo}" alt="" width="36" height="36" style="display:block;border-radius:8px"></td>`
+    + `<td style="line-height:1.3"><div style="font-weight:700">${BRAND.name}</div><div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#71717A">${BRAND.tagline}</div></td></tr></table>`;
+  return `<div style="padding:24px 12px;background:#F4F4F5;font:15px/1.6 -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111">`
+    + `<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(gist)}</div>`
+    + `<div style="max-width:520px;margin:0 auto;padding:24px;border-radius:12px;background:#ffffff">${header}${blocks.map((block, index) => `<div style="margin:0 0 ${index === blocks.length - 1 ? 0 : 16}px">${block}</div>`).join("")}</div>`
+    + `<div style="max-width:520px;margin:16px auto 0;text-align:center;font-size:12px;color:#52525B">${BRAND.name} · ${link(BRAND.site, shortUrl(BRAND.site))}</div></div>`;
+}
+
 /**
  * Emails each user after the response is sent, so the request never waits on SMTP.
  * Only verified addresses get mail.
@@ -132,7 +193,7 @@ export function notify(notes: Note[]) {
         const addr = to.get(n.uid);
         if (!addr) continue;
         await transport
-          .sendMail({ from: { name: "Panelista", address: user }, to: addr, subject: n.subject, text: n.text })
+          .sendMail({ from: { name: "Panelista", address: user }, to: addr, subject: n.subject, text: n.text, html: mailHtml(n.text) })
           .catch((e) => console.error("mail not sent:", n.subject, e instanceof Error ? e.message : e));
       }
     } finally {
