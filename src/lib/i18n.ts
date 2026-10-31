@@ -328,7 +328,7 @@ export const STRINGS = {
   copyLink: ["Copy link", "Copy link"],
   copied: ["Copied!", "Copied!"],
   privacy: ["Privacy", "Privacy"],
-  madeBy: ["Gawa ni riecodes para sa capstone students ng Pilipinas.", "Made by riecodes for Filipino capstone students."],
+  madeBy: ["Gawa para sa capstone students ng Pilipinas.", "Made for Filipino capstone students."],
 
   e_generic: ["May error. Try ulit.", "Something went wrong. Try again."],
   "e_rate-limited": ["Sobrang dami na today. Bukas ulit.", "Too many today. Try again tomorrow."],
