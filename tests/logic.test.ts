@@ -6,6 +6,7 @@ import { sniff } from "../worker/src/sniff.ts";
 import { fieldKey, translate } from "../src/lib/i18n.ts";
 import { findEvaluators, NO_FILTERS, type EvaluatorSort } from "../src/lib/evaluators.ts";
 import type { Profile } from "../src/lib/types.ts";
+import { signInLock } from "../src/lib/signin.ts";
 import { interpret, ISO25010, ISO_ITEM_IDS, tabulate, toTsv } from "../src/lib/iso25010.ts";
 
 const base: RequestLike = { status: "pending", initiatedBy: "student", studentUid: "S", evaluatorUid: "E" };
@@ -150,4 +151,24 @@ test("a rejected API field maps to its form label", () => {
   assert.equal(fieldKey("categories"), "fCategories");
   assert.equal(fieldKey("skills"), "pSkills");
   assert.equal(fieldKey("nope"), null);
+});
+
+test("sign-in lock: repeat clicks do nothing, failure unlocks, success stays locked", async () => {
+  const states: boolean[] = [];
+  const lock = signInLock((l) => states.push(l));
+  let calls = 0;
+  let finish!: () => void;
+  const first = lock(() => (calls++, new Promise<void>((r) => (finish = r))));
+  await lock(async () => calls++);
+  assert.equal(calls, 1, "second click while the first is in flight is ignored");
+  finish();
+  await first;
+  await lock(async () => calls++);
+  assert.equal(calls, 1, "a successful sign-in keeps the lock until the page leaves");
+  assert.deepEqual(states, [true]);
+
+  const lock2 = signInLock((l) => states.push(l));
+  await assert.rejects(lock2(async () => Promise.reject(new Error("auth/popup-closed-by-user"))));
+  await lock2(async () => calls++);
+  assert.equal(calls, 2, "a failed or cancelled sign-in releases the lock");
 });

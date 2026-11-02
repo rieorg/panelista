@@ -16,6 +16,7 @@ import { auth } from "@/lib/firebase";
 import { useApp } from "@/components/app-provider";
 import { Logo } from "@/components/chrome";
 import { ErrorText } from "@/components/ui";
+import { REDIRECT_FLAG, signInLock } from "@/lib/signin";
 
 // Facebook, Messenger, Instagram and LINE in-app browsers: Google blocks OAuth there.
 const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Instagram|Line\//i;
@@ -32,6 +33,15 @@ function safeNext(raw: string | null) {
 }
 
 const codeOf = (e: unknown) => (e as { code?: string }).code ?? "generic";
+const CANCELLED = new Set(["auth/popup-closed-by-user", "auth/cancelled-popup-request", "auth/user-cancelled"]);
+
+function hadRedirect() {
+  try {
+    return sessionStorage.getItem(REDIRECT_FLAG) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function LoginInner() {
   const { t, user, ready } = useApp();
@@ -46,16 +56,44 @@ function LoginInner() {
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
+  // Every sign-in (email, Google popup or redirect) goes through this lock.
+  const [signingIn, setSigningIn] = useState(false);
+  const [lock] = useState(() => signInLock(setSigningIn));
+  const [returning, setReturning] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator exists only after hydration
     setInApp(IN_APP.test(navigator.userAgent));
-    getRedirectResult(auth).catch((e) => setErr(codeOf(e)));
+    const back = hadRedirect();
+    setReturning(back);
+    getRedirectResult(auth)
+      .then((r) => {
+        // With a user, stay locked until the redirect below leaves the page.
+        if (!r) setReturning(false);
+      })
+      .catch((e) => {
+        setReturning(false);
+        if (!CANCELLED.has(codeOf(e))) setErr(codeOf(e));
+      })
+      .finally(() => {
+        try {
+          sessionStorage.removeItem(REDIRECT_FLAG);
+        } catch {}
+      });
   }, []);
 
   useEffect(() => {
     if (ready && user) router.replace(next);
   }, [ready, user, next, router]);
+
+  function signIn(fn: () => Promise<unknown>) {
+    setErr(null);
+    setNotice("");
+    lock(fn).catch((e) => {
+      const code = codeOf(e);
+      if (!CANCELLED.has(code)) setErr(code);
+    });
+  }
 
   async function run(fn: () => Promise<unknown>) {
     setBusy(true);
@@ -64,15 +102,14 @@ function LoginInner() {
     try {
       await fn();
     } catch (e) {
-      const code = codeOf(e);
-      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") setErr(code);
+      setErr(codeOf(e));
     } finally {
       setBusy(false);
     }
   }
 
   const submitEmail = () =>
-    run(async () => {
+    signIn(async () => {
       if (mode === "signin") {
         await signInWithEmailAndPassword(auth, email.trim(), password);
         return;
@@ -83,17 +120,30 @@ function LoginInner() {
     });
 
   const google = () =>
-    run(async () => {
+    signIn(async () => {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       try {
         await signInWithPopup(auth, provider);
       } catch (e) {
         const code = codeOf(e);
-        if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment") return signInWithRedirect(auth, provider);
-        throw e;
+        if (code !== "auth/popup-blocked" && code !== "auth/operation-not-supported-in-this-environment") throw e;
+        try {
+          sessionStorage.setItem(REDIRECT_FLAG, "1");
+        } catch {}
+        await signInWithRedirect(auth, provider);
       }
     });
+
+  // Block the whole page while auth resolves, a sign-in runs, or a signed-in user is on the way out.
+  if (!ready || user || signingIn || returning)
+    return (
+      <div role="status" aria-live="polite" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-surface">
+        {/* eslint-disable-next-line @next/next/no-img-element -- plain mark, not the Logo link, so nothing here navigates away */}
+        <img src="/brand/logo-mark.svg" alt="" width={48} height={48} className="animate-pulse" />
+        <p className="text-muted">{user || signingIn || returning ? t("signingIn") : t("loading")}</p>
+      </div>
+    );
 
   const forgot = () =>
     run(async () => {

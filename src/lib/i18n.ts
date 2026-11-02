@@ -19,6 +19,7 @@ export const STRINGS = {
   signOut: ["Sign out", "Sign out"],
   langSwitch: ["English", "Taglish"],
   loading: ["Loading...", "Loading..."],
+  signingIn: ["Nagsa-sign in...", "Signing you in..."],
   save: ["Save", "Save"],
   saved: ["Saved!", "Saved!"],
   cancel: ["Cancel", "Cancel"],
