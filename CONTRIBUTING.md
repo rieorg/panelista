@@ -81,7 +81,7 @@ GitHub Actions runs the same checks on every pull request.
 
 Be kind and patient; many contributors are students doing this for the first
 time. No harassment, insults or discrimination. Taglish and English are both
-welcome. Report problems to the maintainers at eirmonpaculan11@gmail.com.
+welcome. Report problems to the maintainers at riecodes.collab@gmail.com.
 
 ## License
 

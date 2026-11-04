@@ -32,8 +32,8 @@ export default function Privacy() {
       <h2 className="text-xl font-bold">Your rights</h2>
       <p>
         You can edit your profile any time. To delete your account and data, email{" "}
-        <a className="text-brand underline" href="mailto:eirmonpaculan11@gmail.com">
-          eirmonpaculan11@gmail.com
+        <a className="text-brand underline" href="mailto:riecodes.collab@gmail.com">
+          riecodes.collab@gmail.com
         </a>{" "}
         from the Google account you used, and we will delete it within 7 days.
       </p>

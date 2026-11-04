@@ -4,7 +4,7 @@ Panelista holds real people's profiles, chats and verification documents.
 If you find a vulnerability, please report it privately:
 
 - GitHub: the **Security** tab, then **Report a vulnerability**, or
-- Email: eirmonpaculan11@gmail.com
+- Email: riecodes.collab@gmail.com
 
 Please do not open a public issue, and do not test against other users' data
 on https://panelista.vercel.app. Use the local emulator setup in
