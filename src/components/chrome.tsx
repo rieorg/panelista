@@ -99,7 +99,7 @@ export function Footer() {
           <Link href="/privacy" className="hover:text-ink">
             {t("privacy")}
           </Link>
-          <a href="mailto:riecodes.collab@gmail.com" className="hover:text-ink">
+          <a href="mailto:eirmonpaculan11@gmail.com" className="hover:text-ink">
             Contact
           </a>
         </nav>
