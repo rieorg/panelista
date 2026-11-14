@@ -10,9 +10,9 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://panelista.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
-  title: { default: "Panelista: IT expert evaluators for your capstone", template: "%s | Panelista" },
+  title: { default: "Panelista: Find IT professionals to evaluate your capstone", template: "%s | Panelista" },
   description:
-    "Free Philippine platform where capstone students find IT professionals and domain experts to evaluate their systems. Ratings, Verified badges, in-app chat.",
+    "Find IT professionals to evaluate your capstone. Free for Philippine capstone students, with ratings, Verified badges and in-app chat.",
   openGraph: { siteName: "Panelista", type: "website", locale: "en_PH" },
   twitter: { card: "summary_large_image" },
 };
