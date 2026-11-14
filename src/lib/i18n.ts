@@ -29,8 +29,8 @@ export const STRINGS = {
 
   heroTitle: ["Need mo ng IT expert evaluator? Nandito sila.", "Need IT expert evaluators? They're here."],
   heroSub: [
-    "Libre lang maghanap dito ng IT professionals at domain experts na pwedeng mag-evaluate ng capstone mo. May ratings at Verified badge.",
-    "A free place to find IT professionals and domain experts who will evaluate your capstone. Rated and verified.",
+    "Find IT professionals para i-evaluate capstone mo. May ratings at Verified badge.",
+    "Find IT professionals to evaluate your capstone. Rated and verified.",
   ],
   ctaFind: ["Hanap ng evaluator", "Find evaluators"],
   ctaBe: ["Maging Panelista", "Become a Panelista"],
