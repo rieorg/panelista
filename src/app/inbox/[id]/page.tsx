@@ -62,7 +62,11 @@ function Thread({ id }: { id: string }) {
     const batch = writeBatch(db);
     batch.set(doc(collection(db, "requests", id, "messages")), { senderUid: uid, text: body, createdAt: serverTimestamp() });
     batch.update(doc(db, "requests", id), { lastMessage: body.slice(0, 120), lastMessageAt: serverTimestamp(), lastSender: uid });
-    await batch.commit().catch(() => setErr("generic"));
+    await batch.commit().catch(() => {
+      setErr("generic");
+      // Give the text back unless they already started a new one.
+      setText((cur) => cur || body);
+    });
   }
 
   async function act(action: Action) {
