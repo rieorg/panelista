@@ -108,7 +108,7 @@ test("copy: both languages for every string, the same variables in each, no em d
   for (const [key, pair] of Object.entries(STRINGS)) {
     const [tl, en] = pair as readonly [string, string];
     assert.ok(tl.trim() && en.trim(), `${key} has both languages`);
-    assert.equal(/—/.test(tl + en), false, `${key} has no em dash`);
+    assert.equal((tl + en).includes(String.fromCharCode(0x2014)), false, `${key} has no em dash`);
     // {s} is the plural helper, which Taglish often does not need.
     const vars = (s: string) => [...new Set(s.match(/\{\w+\}/g) ?? [])].filter((v) => v !== "{s}").sort();
     assert.deepEqual(vars(tl), vars(en), `${key} uses the same variables in both languages`);

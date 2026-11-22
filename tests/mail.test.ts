@@ -46,7 +46,7 @@ test("every mail links only to Panelista and ends with the never-send-money line
     assert.equal(links.length, 1, m.subject);
     assert.ok(links[0].startsWith(`${SITE}/`), links[0]);
     assert.ok(m.text.endsWith("Libre ang Panelista. Wag magpadala ng pera o password kahit kanino."), m.subject);
-    assert.equal(/—/.test(m.subject + m.text), false, "no em dash");
+    assert.equal((m.subject + m.text).includes(String.fromCharCode(0x2014)), false, "no em dash");
   }
 });
 
