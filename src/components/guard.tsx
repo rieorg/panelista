@@ -3,18 +3,24 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { sendEmailVerification } from "firebase/auth";
 import { useApp } from "./app-provider";
+import { Onboarding, skippedOnboarding } from "./onboarding";
 import { Pany, PanySays } from "./pany";
-import { ProfileForm } from "./profile-form";
 import { Spinner } from "./ui";
 
 /**
- * Signed-in, email-verified users only. Without `optional`, users without a
- * profile set one up first (needed to post projects or send requests).
+ * Signed-in, email-verified users only. Someone without a profile goes through the
+ * first-run flow (components/onboarding.tsx) before the page shows: posting projects
+ * and sending requests need a profile. With `optional` the page works without one;
+ * add `onboard` there to still offer the flow, with a way to skip it (the account page).
+ * People who already have a profile never see it.
  */
-export function RequireProfile({ children, optional = false }: { children: React.ReactNode; optional?: boolean }) {
-  const { user, profile, ready, t } = useApp();
+export function RequireProfile({ children, optional = false, onboard = !optional }: { children: React.ReactNode; optional?: boolean; onboard?: boolean }) {
+  const { user, profile, ready } = useApp();
   const router = useRouter();
   const path = usePathname();
+  // "open" from the moment the flow saves, so its last screen stays up once the profile
+  // exists; "closed" when the person leaves it (finished or skipped).
+  const [flow, setFlow] = useState<"open" | "closed">();
 
   useEffect(() => {
     if (ready && !user) router.replace(`/login?next=${encodeURIComponent(path + location.search)}`);
@@ -22,16 +28,10 @@ export function RequireProfile({ children, optional = false }: { children: React
 
   if (!ready || !user) return <Spinner />;
   if (!user.emailVerified) return <VerifyEmail />;
-  if (!profile && !optional)
-    return (
-      <div className="mx-auto flex max-w-2xl flex-col gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{t("welcomeTitle")}</h1>
-          <p className="text-muted">{t("welcomeSub")}</p>
-        </div>
-        <ProfileForm />
-      </div>
-    );
+  if (onboard && (flow === "open" || (flow === undefined && !profile && !(optional && skippedOnboarding(user.uid)))))
+    return <Onboarding required={!optional} onSaving={() => setFlow("open")} onClose={() => setFlow("closed")} />;
+  // Saved a moment ago and the profile has not arrived over the listener yet.
+  if (!profile && !optional) return <Spinner />;
   return <>{children}</>;
 }
 

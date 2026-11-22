@@ -241,7 +241,7 @@ function Verification() {
 export default function MePage() {
   return (
     <Suspense>
-      <RequireProfile optional>
+      <RequireProfile optional onboard>
         <MeInner />
       </RequireProfile>
     </Suspense>

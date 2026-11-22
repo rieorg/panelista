@@ -44,6 +44,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setReady(true);
         return;
       }
+      // Not ready again until this account's profile has loaded. Right after sign-in `ready` is
+      // still true from the signed-out state, and "no profile yet" would read as a new account.
+      setReady(false);
       const token = await u.getIdTokenResult();
       setIsAdmin(token.claims.admin === true);
       unsubProfile = onSnapshot(doc(db, "profiles", u.uid), (snap) => {
