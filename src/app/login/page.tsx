@@ -35,8 +35,7 @@ function hadRedirect() {
 function LoginInner() {
   const { t, user, ready } = useApp();
   const router = useRouter();
-  // The tested check in lib/signin: the local copy let a same-origin "//host" path through.
-  const next = safeNext(useSearchParams().get("next"), location.origin);
+  const params = useSearchParams();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -73,8 +72,10 @@ function LoginInner() {
   }, []);
 
   useEffect(() => {
-    if (ready && user) router.replace(next);
-  }, [ready, user, next, router]);
+    // The tested check in lib/signin: the local copy let a same-origin "//host" path through.
+    // Read here and not during render: location exists only in the browser, and a server render of this page threw on it.
+    if (ready && user) router.replace(safeNext(params.get("next"), location.origin));
+  }, [ready, user, params, router]);
 
   function signIn(fn: () => Promise<unknown>) {
     setErr(null);
