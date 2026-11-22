@@ -14,7 +14,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useApp } from "@/components/app-provider";
-import { Logo } from "@/components/chrome";
+import { Bubble, Pany } from "@/components/pany";
 import { ErrorText } from "@/components/ui";
 import { REDIRECT_FLAG, signInLock } from "@/lib/signin";
 
@@ -140,8 +140,10 @@ function LoginInner() {
     return (
       <div role="status" aria-live="polite" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-surface">
         {/* eslint-disable-next-line @next/next/no-img-element -- plain mark, not the Logo link, so nothing here navigates away */}
-        <img src="/brand/logo-mark.svg" alt="" width={48} height={48} className="animate-pulse" />
+        <img src="/brand/logo-mark.svg" alt="" width={48} height={48} />
         <p className="text-muted">{user || signingIn || returning ? t("signingIn") : t("loading")}</p>
+        {/* Usually gone in a blink. If sign-in drags on, Pany keeps the person company. */}
+        <Pany pose="thinking" size={112} className="after-1s" />
       </div>
     );
 
@@ -153,10 +155,14 @@ function LoginInner() {
     });
 
   return (
-    <div className="mx-auto flex max-w-sm flex-col gap-5 py-8">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <Logo />
-        <h1 className="text-2xl font-bold">{mode === "signin" ? t("loginTitle") : t("createAccount")}</h1>
+    <div className="mx-auto flex max-w-sm flex-col gap-5 py-2 sm:py-8">
+      {/* Pany greets, and her bubble is the page heading. */}
+      <div className="flex items-start gap-2.5">
+        <Pany pose="wave" size={104} />
+        <Bubble who="Pany" className="mt-3 flex-1">
+          <h1 className="text-lg leading-snug font-bold">{mode === "signin" ? t("loginTitle") : t("createAccount")}</h1>
+          <p className="mt-0.5 text-muted">{t("loginSub")}</p>
+        </Bubble>
       </div>
 
       <form
@@ -205,15 +211,15 @@ function LoginInner() {
         <button className="btn-primary w-full py-3" disabled={busy}>
           {mode === "signin" ? t("signInEmail") : t("createAccount")}
         </button>
-        <div className="flex flex-wrap justify-between gap-2 text-sm">
+        <div className="-my-1 flex flex-wrap justify-between gap-x-4 text-sm">
           {mode === "signin" ? (
-            <button type="button" className="text-brand underline" onClick={forgot} disabled={busy || !email}>
+            <button type="button" className="min-h-11 text-brand underline disabled:text-muted disabled:no-underline" onClick={forgot} disabled={busy || !email}>
               {t("forgotPw")}
             </button>
           ) : (
             <span />
           )}
-          <button type="button" className="text-brand underline" onClick={() => setMode(mode === "signin" ? "signup" : "signin")}>
+          <button type="button" className="min-h-11 text-left text-brand underline" onClick={() => setMode(mode === "signin" ? "signup" : "signin")}>
             {mode === "signin" ? `${t("noAccount")} ${t("createAccount")}` : `${t("haveAccount")} ${t("signInEmail")}`}
           </button>
         </div>
@@ -226,7 +232,7 @@ function LoginInner() {
       </div>
 
       {inApp && (
-        <div role="alert" className="card border-accent bg-accent/15 p-4 text-sm">
+        <div role="alert" className="card border-tip bg-tip p-4 text-sm">
           <p>{t("inAppWarn")}</p>
           <button className="btn-ghost mt-3 w-full" onClick={() => navigator.clipboard.writeText(location.href).then(() => setCopied(true), () => {})}>
             {copied ? t("copied") : t("copyLink")}
@@ -242,7 +248,6 @@ function LoginInner() {
         </svg>
         {t("signInGoogle")}
       </button>
-      <p className="text-center text-xs text-muted">{t("loginSub")}</p>
     </div>
   );
 }

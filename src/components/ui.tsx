@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { useApp } from "./app-provider";
 import { CATEGORY_LABELS, errorKey, fieldKey } from "@/lib/i18n";
 import type { EvalRequest } from "@/lib/types";
+import { Pany, PanySays, type Pose } from "./pany";
 import type { Timestamp } from "firebase/firestore";
 
 // No photo: a DiceBear Notionists face (CC0, same as webinar's chat), seeded by a hash of the name so the same
@@ -90,7 +91,7 @@ export function AdminBadge({ className = "inline-flex" }: { className?: string }
 export function FormLink({ href }: { href: string }) {
   const { t } = useApp();
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="btn-primary w-fit">
+    <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="btn-primary w-fit max-w-full">
       {t("evalForm")}
       <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M5 11 11 5M6 5h5v5" strokeLinecap="round" strokeLinejoin="round" />
@@ -111,17 +112,24 @@ export function CategoryChips({ items }: { items: string[] }) {
   );
 }
 
-export function Empty({ img, text, children }: { img: string; text: string; children?: React.ReactNode }) {
+/**
+ * Nothing here yet, or nothing found: Pany, what happened, and the next step as children.
+ * "kulangpa" is for an empty list, "oops" for something missing or broken.
+ */
+export function Empty({ pose = "kulangpa", title, text, children }: { pose?: Pose; title?: string; text: string; children?: React.ReactNode }) {
   return (
-    <div className="card flex flex-col items-center gap-3 px-6 py-10 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/brand/${img}.svg`} alt="" width={200} height={160} className="h-32 w-auto" />
-      <p className="max-w-sm text-muted">{text}</p>
-      {children}
+    <div className="card flex flex-col items-center gap-4 px-6 py-8 text-center sm:flex-row sm:justify-center sm:gap-8 sm:px-10 sm:text-left">
+      <Pany pose={pose} size={144} />
+      <div className="flex max-w-sm flex-col items-center gap-3 sm:items-start">
+        {title && <h1 className="text-xl font-bold">{title}</h1>}
+        <p className="text-muted">{text}</p>
+        {children}
+      </div>
     </div>
   );
 }
 
+/** An error in Pany's voice: her "oops" avatar and a red bubble, announced to screen readers. */
 export function ErrorText({ code }: { code: string | null }) {
   const { t } = useApp();
   if (!code) return null;
@@ -129,18 +137,36 @@ export function ErrorText({ code }: { code: string | null }) {
   const [c, field] = code.split(":");
   const label = field ? fieldKey(field) : null;
   return (
-    <p role="alert" className="text-sm text-red-700">
+    <PanySays tone="oops" role="alert">
       {t(errorKey(c))} {label && <b>{t(label)}</b>}
-    </p>
+    </PanySays>
   );
 }
 
+/** Loading: still skeleton rows right away (no shimmer). Pany joins only when it takes over a second. */
 export function Spinner() {
   const { t } = useApp();
-  return <p className="py-10 text-center text-muted">{t("loading")}</p>;
+  return (
+    <div role="status" aria-busy="true" className="card flex items-center gap-6 p-5">
+      <span className="sr-only">{t("loading")}</span>
+      <div aria-hidden className="flex min-w-0 flex-1 flex-col gap-5">
+        {[62, 48, 55].map((w) => (
+          <div key={w} className="flex items-center gap-3">
+            <span className="h-10 w-10 shrink-0 rounded-full bg-line/70" />
+            <span className="flex flex-1 flex-col gap-2">
+              <span className="h-2.5 rounded bg-line/70" style={{ width: `${w}%` }} />
+              <span className="h-2.5 rounded bg-line/70" style={{ width: `${w - 20}%` }} />
+            </span>
+          </div>
+        ))}
+      </div>
+      <Pany pose="thinking" size={112} className="after-1s max-sm:hidden" />
+    </div>
+  );
 }
 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const { t } = useApp();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -148,11 +174,13 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   }, [onClose]);
   return (
     <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="rounded-lg px-2 py-1 text-xl text-muted hover:bg-surface">
-            ×
+          <button onClick={onClose} aria-label={t("close")} className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface">
+            <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         </div>
         {children}

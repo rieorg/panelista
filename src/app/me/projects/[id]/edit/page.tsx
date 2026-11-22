@@ -15,7 +15,7 @@ function Inner({ id }: { id: string }) {
     getDoc(doc(db, "projects", id)).then((s) => setP(s.exists() ? ({ id: s.id, ...s.data() } as Project) : null), () => setP(null));
   }, [id]);
   if (p === undefined) return <Spinner />;
-  if (!p || p.ownerUid !== user?.uid) return <Empty img="empty-projects" text={t("notFound")} />;
+  if (!p || p.ownerUid !== user?.uid) return <Empty pose="oops" text={t("notFound")} />;
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <h1 className="text-2xl font-bold">{t("editProject")}</h1>

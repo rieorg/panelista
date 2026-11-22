@@ -252,6 +252,8 @@ export const STRINGS = {
 
   welcomeTitle: ["Welcome sa Panelista!", "Welcome to Panelista!"],
   welcomeSub: ["Setup muna ng profile. Pwedeng student at evaluator at the same time.", "Set up your profile. You can be both a student and an evaluator."],
+  lostTitle: ["Ay, naligaw yata.", "This page wandered off."],
+  backHome: ["Balik sa home", "Back to home"],
   roleQ: ["What brings you here?", "What brings you here?"],
   roleStudent: ["Student ako, naghahanap ng evaluator", "I'm a student looking for evaluators"],
   roleEvaluator: ["Professional ako, gusto kong mag-evaluate", "I'm a professional who wants to evaluate"],

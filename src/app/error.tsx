@@ -10,7 +10,7 @@ export default function PageError({ error }: { error: Error & { digest?: string 
   const { t } = useApp();
   useEffect(() => reportError(error), [error]);
   return (
-    <Empty img="empty-projects" text={t("crashText")}>
+    <Empty pose="oops" text={t("crashText")}>
       <button className="btn-primary" onClick={() => location.reload()}>
         {t("reload")}
       </button>

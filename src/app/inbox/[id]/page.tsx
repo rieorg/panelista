@@ -46,7 +46,7 @@ function Thread({ id }: { id: string }) {
   }, [msgs.length]);
 
   if (r === undefined) return <Spinner />;
-  if (r === null) return <Empty img="empty-inbox" text={t("notFound")} />;
+  if (r === null) return <Empty pose="oops" text={t("notFound")} />;
 
   const side = sideOf(r, uid)!;
   const other = side === "student" ? { name: r.evaluatorName, photo: r.evaluatorPhoto, uid: r.evaluatorUid } : { name: r.studentName, photo: r.studentPhoto, uid: r.studentUid };
@@ -83,8 +83,8 @@ function Thread({ id }: { id: string }) {
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-10rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-line bg-white">
-      <header className="flex flex-wrap items-center gap-3 border-b border-line p-3">
-        <Link href={`/e/${other.uid}`} className="flex items-center gap-2">
+      <header className="flex flex-wrap items-center gap-x-3 border-b border-line px-3 py-2">
+        <Link href={`/e/${other.uid}`} className="flex min-h-11 items-center gap-2">
           <Avatar src={other.photo} name={other.name} size={40} />
           <span className="font-semibold">{other.name}</span>
         </Link>
@@ -94,7 +94,8 @@ function Thread({ id }: { id: string }) {
             {t("certificate")}
           </Link>
         )}
-        <Link href={`/p/${r.projectId}`} className="ml-auto max-w-[45%] truncate text-sm text-brand underline">
+        {/* Its own full row on phones, where 45% of the header cut every title short. */}
+        <Link href={`/p/${r.projectId}`} className="w-full truncate py-3 text-sm text-brand underline sm:ml-auto sm:w-auto sm:max-w-[45%]">
           {r.projectTitle}
         </Link>
       </header>
@@ -231,9 +232,9 @@ function RateForm({ requestId, name, required }: { requestId: string; name: stri
     <div className="flex flex-col gap-2 rounded-xl bg-brand-soft p-3">
       <p className="font-semibold">{t("rateTitle", { name })}</p>
       {required && <p className="text-xs text-muted">{t("rateRequired")}</p>}
-      <div role="radiogroup" aria-label={t("rateTitle", { name })} className="flex gap-1 text-3xl">
+      <div role="radiogroup" aria-label={t("rateTitle", { name })} className="-ml-1.5 flex text-3xl">
         {[1, 2, 3, 4, 5].map((i) => (
-          <button key={i} type="button" role="radio" aria-checked={stars === i} aria-label={`${i}`} onClick={() => setStars(i)} className={i <= stars ? "text-star" : "text-line"}>
+          <button key={i} type="button" role="radio" aria-checked={stars === i} aria-label={`${i}`} onClick={() => setStars(i)} className={`h-11 w-11 ${i <= stars ? "text-star" : "text-line-strong"}`}>
             ★
           </button>
         ))}
@@ -247,7 +248,7 @@ function RateForm({ requestId, name, required }: { requestId: string; name: stri
               key={tg}
               aria-pressed={on}
               onClick={() => setTags(on ? tags.filter((x) => x !== tg) : [...tags, tg].slice(0, 4))}
-              className={`rounded-full border px-2.5 py-0.5 text-xs ${on ? "border-brand bg-brand text-white" : "border-line bg-white"}`}
+              className="pick"
             >
               {t(`tag_${tg}` as never)}
             </button>

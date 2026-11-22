@@ -27,11 +27,11 @@ function Certificate({ id }: { id: string }) {
   }, [evaluatorUid, id]);
 
   if (r === undefined || (evaluatorUid && evaluator === undefined)) return <Spinner />;
-  if (r === null) return <Empty img="empty-inbox" text={t("notFound")} />;
+  if (r === null) return <Empty pose="oops" text={t("notFound")} />;
   if (r.status !== "completed")
     return (
-      <Empty img="empty-inbox" text={t("certNotYet")}>
-        <Link href={`/inbox/${id}`} className="text-sm text-brand underline">
+      <Empty pose="certificate" text={t("certNotYet")}>
+        <Link href={`/inbox/${id}`} className="btn-ghost">
           {t("certBack")}
         </Link>
       </Empty>
@@ -40,7 +40,7 @@ function Certificate({ id }: { id: string }) {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 print:max-w-none">
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href={`/inbox/${id}`} className="text-sm text-brand underline">
+        <Link href={`/inbox/${id}`} className="inline-flex min-h-11 items-center text-sm text-brand underline">
           {t("certBack")}
         </Link>
         <button className="btn-primary" onClick={() => window.print()}>

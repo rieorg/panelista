@@ -2,8 +2,9 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signOut } from "firebase/auth";
 import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
-import { api, db, worker } from "@/lib/firebase";
+import { api, auth, db, worker } from "@/lib/firebase";
 import type { Project } from "@/lib/types";
 import { useApp } from "@/components/app-provider";
 import { RequireProfile } from "@/components/guard";
@@ -24,26 +25,44 @@ function MeInner() {
   const [fallback] = useState<Tab>(profile ? "inbox" : "profile");
   const tab = (TABS.includes(sp.get("tab") as Tab) ? sp.get("tab") : fallback) as Tab;
 
+  const name = profile?.name || user!.displayName || user!.email || "";
+
   return (
     <div className="flex flex-col gap-5">
-      <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-line">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Avatar src={profile?.photoURL || user!.photoURL || ""} name={name || "?"} size={48} />
+        <div className="min-w-0 flex-1 basis-40">
+          <h1 className="flex items-center gap-2 text-xl font-bold">
+            <span className="truncate">{name}</span>
+            {isAdmin && <AdminBadge />}
+          </h1>
+          <p className="truncate text-sm text-muted">{user!.email}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {profile && (
+            <Link href={`/e/${user!.uid}`} className="btn-ghost">
+              {t("viewPublic")}
+            </Link>
+          )}
+          {/* Phones have no room for this in the header, so it lives here. */}
+          <button className="btn-quiet sm:hidden" onClick={() => signOut(auth)}>
+            {t("signOut")}
+          </button>
+        </div>
+      </div>
+      {/* Bleeds to the screen edge on phones, so four tabs fit and a fifth would scroll inside the strip, not the page. */}
+      <div role="tablist" className="-mx-4 flex overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0">
         {TABS.map((k) => (
           <button
             key={k}
             role="tab"
             aria-selected={tab === k}
             onClick={() => router.replace(`/me?tab=${k}`)}
-            className={`whitespace-nowrap border-b-2 px-4 py-2 text-sm font-semibold ${tab === k ? "border-brand text-brand" : "border-transparent text-muted"}`}
+            className={`min-h-11 flex-1 border-b-2 px-3 text-sm font-semibold whitespace-nowrap sm:flex-none sm:px-4 ${tab === k ? "border-brand text-brand" : "border-transparent text-muted hover:text-ink"}`}
           >
             {t(TAB_LABEL[k])}
           </button>
         ))}
-        {isAdmin && <AdminBadge className="ml-auto inline-flex self-center" />}
-        {profile && (
-          <Link href={`/e/${user!.uid}`} className={`${isAdmin ? "" : "ml-auto"} self-center whitespace-nowrap px-2 text-sm text-brand underline`}>
-            {t("viewPublic")}
-          </Link>
-        )}
       </div>
       {tab === "inbox" && <InboxList />}
       {tab === "projects" && <MyProjects />}
@@ -59,8 +78,8 @@ function InboxList() {
   if (!items) return <Spinner />;
   if (!items.length)
     return (
-      <Empty img="empty-inbox" text={t("emptyInbox")}>
-        <div className="flex flex-wrap justify-center gap-2">
+      <Empty text={t("emptyInbox")}>
+        <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
           <Link href="/evaluators" className="btn-primary">
             {t("ctaFind")}
           </Link>
@@ -106,22 +125,26 @@ function MyProjects() {
       .then((s) => setItems(s.docs.map((d) => ({ id: d.id, ...d.data() }) as Project)))
       .catch(() => setItems([]));
   }, [user]);
+  if (!items) return <Spinner />;
+  // Nothing yet: one clear next step, in the empty state itself.
+  if (items.length === 0)
+    return (
+      <Empty text={t("needProject")}>
+        <Link href="/me/projects/new" className="btn-primary">
+          {t("ctaPost")}
+        </Link>
+      </Empty>
+    );
   return (
     <div className="flex flex-col gap-4">
       <Link href="/me/projects/new" className="btn-primary w-fit">
         {t("newProject")}
       </Link>
-      {!items ? (
-        <Spinner />
-      ) : items.length === 0 ? (
-        <Empty img="empty-projects" text={t("needProject")} />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((p) => (
-            <ProjectCard key={p.id} p={p} />
-          ))}
-        </div>
-      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((p) => (
+          <ProjectCard key={p.id} p={p} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -165,15 +188,8 @@ function Verification() {
 
   if (!profile?.isEvaluator) return <p className="card p-5 text-muted">{t("verifyNeedEval")}</p>;
   if (v === undefined) return <Spinner />;
-  if (profile.verified)
-    return (
-      <div className="card flex flex-col items-center gap-3 p-8 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/verified.svg" alt="" className="h-32" />
-        <p className="font-semibold text-brand">{t("verifyApproved")}</p>
-      </div>
-    );
-  if (v?.status === "pending") return <p className="card p-5">{t("verifyPending")}</p>;
+  if (profile.verified) return <Empty pose="cheer" text={t("verifyApproved")} />;
+  if (v?.status === "pending") return <Empty pose="grading" text={t("verifyPending")} />;
 
   async function submit() {
     setBusy(true);

@@ -98,7 +98,7 @@ export function ProjectForm({ existing }: { existing?: Project }) {
                 key={c}
                 aria-pressed={on}
                 onClick={() => set("categories", on ? f.categories.filter((x) => x !== c) : [...f.categories, c].slice(0, 4))}
-                className={`rounded-full border px-3 py-1 text-sm ${on ? "border-brand bg-brand text-white" : "border-line bg-white"}`}
+                className="pick"
               >
                 {CATEGORY_LABELS[c]}
               </button>
@@ -151,7 +151,7 @@ export function ProjectForm({ existing }: { existing?: Project }) {
         </div>
       </div>
       <ErrorText code={err} />
-      <button className="btn-primary" disabled={busy}>
+      <button className="btn-primary min-h-12 text-base sm:w-fit sm:min-w-40" disabled={busy}>
         {existing ? t("save") : t("postProject")}
       </button>
     </form>

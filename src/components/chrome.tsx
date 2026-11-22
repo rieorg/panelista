@@ -8,7 +8,7 @@ import { AdminBadge, Avatar, isUnread, useInbox } from "./ui";
 
 export function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
+    <Link href="/" className="flex min-h-11 items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand/logo-mark.svg" alt="" width={32} height={32} />
       Panelista
@@ -33,16 +33,18 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur print:hidden">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 pt-1.5 sm:pb-1.5">
         <Logo />
-        <nav aria-label="Main" className="order-3 flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto">
+        {/* Phones: a second row where every link is an equal, 44 px tall share of the width. */}
+        <nav aria-label="Main" className="order-3 flex w-full gap-1 pb-1.5 sm:order-none sm:w-auto sm:pb-0">
           {links.map((l) => {
             const active = path === l.href.split("?")[0];
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`relative whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium ${active ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-surface"}`}
+                aria-current={active ? "page" : undefined}
+                className={`flex min-h-11 flex-1 items-center justify-center rounded-lg px-3 text-sm font-medium whitespace-nowrap sm:flex-none ${active ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-surface hover:text-ink"}`}
               >
                 {l.label}
                 {"badge" in l && l.badge ? (
@@ -54,32 +56,33 @@ export function Header() {
             );
           })}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <button onClick={() => setLang(lang === "tl" ? "en" : "tl")} className="rounded-lg px-2 py-1.5 text-xs font-semibold text-muted hover:bg-surface">
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <button onClick={() => setLang(lang === "tl" ? "en" : "tl")} className="btn-quiet px-2.5 text-xs font-semibold">
             {t("langSwitch")}
           </button>
           {user ? (
             <>
               {isAdmin && <AdminBadge className="hidden sm:inline-flex" />}
-              <Link href="/me?tab=profile" aria-label={t("navMe")} className="rounded-full">
+              <Link href="/me?tab=profile" aria-label={t("navMe")} className="grid h-11 w-11 place-items-center rounded-full">
                 <Avatar src={profile?.photoURL || user.photoURL || ""} name={profile?.name || user.displayName || "?"} size={34} />
               </Link>
-              <button onClick={() => signOut(auth)} className="hidden rounded-lg px-2 py-1.5 text-xs text-muted hover:bg-surface sm:block">
+              {/* Phones get Sign out on the account page (/me) instead. */}
+              <button onClick={() => signOut(auth)} className="btn-quiet hidden px-2.5 text-xs sm:inline-flex">
                 {t("signOut")}
               </button>
             </>
           ) : (
-            <Link href={`/login?next=${encodeURIComponent(path)}`} className="btn-primary py-2">
+            <Link href={`/login?next=${encodeURIComponent(path)}`} className="btn-primary">
               {t("signIn")}
             </Link>
           )}
         </div>
       </div>
       {due && path !== `/inbox/${due.id}` && (
-        <div role="status" className="border-t border-line bg-accent/20">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
+        <div role="status" className="border-t border-line bg-tip">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 px-4 py-1 text-sm">
             <span>{t("reviewDue", { name: due.evaluatorName })}</span>
-            <Link href={`/inbox/${due.id}`} className="font-semibold text-brand underline">
+            <Link href={`/inbox/${due.id}`} className="inline-flex min-h-11 items-center font-semibold text-brand-dark underline">
               {t("rateNow")}
             </Link>
           </div>
@@ -93,13 +96,13 @@ export function Footer() {
   const { t } = useApp();
   return (
     <footer className="border-t border-line bg-white print:hidden">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 px-4 py-3 text-sm text-muted">
         <p>{t("madeBy")}</p>
-        <nav className="flex gap-4">
-          <Link href="/privacy" className="hover:text-ink">
+        <nav aria-label="Footer" className="-mx-2 flex">
+          <Link href="/privacy" className="inline-flex min-h-11 items-center px-2 hover:text-ink">
             {t("privacy")}
           </Link>
-          <a href="mailto:eirmonpaculan11@gmail.com" className="hover:text-ink">
+          <a href="mailto:eirmonpaculan11@gmail.com" className="inline-flex min-h-11 items-center px-2 hover:text-ink">
             Contact
           </a>
         </nav>

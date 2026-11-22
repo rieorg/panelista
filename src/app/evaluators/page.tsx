@@ -92,12 +92,12 @@ export default function EvaluatorsPage() {
           <option value="online">{t("online")}</option>
           <option value="onsite">{t("onsite")}</option>
         </select>
-        <label className="flex items-center gap-2 px-1 text-sm">
-          <input type="checkbox" checked={f.verified} onChange={(e) => set("verified", e.target.checked)} className="h-4 w-4 accent-brand" />
+        <label className="check px-1">
+          <input type="checkbox" checked={f.verified} onChange={(e) => set("verified", e.target.checked)} className="h-5 w-5 shrink-0 accent-brand" />
           {t("verifiedOnly")}
         </label>
-        <label className="flex items-center gap-2 px-1 text-sm">
-          <input type="checkbox" checked={f.accepting} onChange={(e) => set("accepting", e.target.checked)} className="h-4 w-4 accent-brand" />
+        <label className="check px-1">
+          <input type="checkbox" checked={f.accepting} onChange={(e) => set("accepting", e.target.checked)} className="h-5 w-5 shrink-0 accent-brand" />
           {t("acceptingOnly")}
         </label>
       </div>
@@ -107,16 +107,22 @@ export default function EvaluatorsPage() {
         <ErrorText code="generic" />
       ) : (
         <>
-          <p className="flex flex-wrap items-center gap-3 text-sm text-muted" aria-live="polite">
+          <p className="flex min-h-11 flex-wrap items-center gap-x-3 text-sm text-muted" aria-live="polite">
             {t("resultsCount", { n: matches.length })}
-            {filtered && (
-              <button className="text-brand underline" onClick={() => (setF(NONE), setShownN(PAGE))}>
+            {filtered && matches.length > 0 && (
+              <button className="min-h-11 text-brand underline" onClick={() => (setF(NONE), setShownN(PAGE))}>
                 {t("clearFilters")}
               </button>
             )}
           </p>
           {matches.length === 0 ? (
-            <Empty img="empty-projects" text={all.length ? t("noMatch") : t("noEvaluators")} />
+            <Empty text={all.length ? t("noMatch") : t("noEvaluators")}>
+              {filtered && (
+                <button className="btn-ghost" onClick={() => (setF(NONE), setShownN(PAGE))}>
+                  {t("clearFilters")}
+                </button>
+              )}
+            </Empty>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {matches.slice(0, shownN).map((p) => (

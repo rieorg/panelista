@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { AppProvider } from "@/components/app-provider";
 import { Header, Footer } from "@/components/chrome";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"] });
+// Step numbers and counters (font-mono). Not preloaded: only pages that show one fetch it.
+const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], weight: ["400", "500"], preload: false });
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://panelista.vercel.app";
 
@@ -24,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // translate="no": Chrome offers to translate "fil" pages, and its DOM rewrites crash
     // React on the next update. The app has its own English toggle.
-    <html lang="fil" translate="no" className={`${jakarta.variable} h-full antialiased`}>
+    <html lang="fil" translate="no" className={`${jakarta.variable} ${jetbrains.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
         <AppProvider>
           <Header />

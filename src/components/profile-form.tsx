@@ -6,6 +6,7 @@ import { api } from "@/lib/firebase";
 import { AWAY_AFTER, CATEGORIES } from "@/lib/domain";
 import { CATEGORY_LABELS } from "@/lib/i18n";
 import { useApp } from "./app-provider";
+import { PanySays } from "./pany";
 import { ErrorText, splitTags } from "./ui";
 
 export function ProfileForm() {
@@ -75,14 +76,14 @@ export function ProfileForm() {
         submit();
       }}
     >
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col">
         <legend className="label">{t("roleQ")}</legend>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={f.isStudent} onChange={(e) => set("isStudent", e.target.checked)} className="h-4 w-4 accent-brand" />
+        <label className="check">
+          <input type="checkbox" checked={f.isStudent} onChange={(e) => set("isStudent", e.target.checked)} className="h-5 w-5 shrink-0 accent-brand" />
           {t("roleStudent")}
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={f.isEvaluator} onChange={(e) => set("isEvaluator", e.target.checked)} className="h-4 w-4 accent-brand" />
+        <label className="check">
+          <input type="checkbox" checked={f.isEvaluator} onChange={(e) => set("isEvaluator", e.target.checked)} className="h-5 w-5 shrink-0 accent-brand" />
           {t("roleEvaluator")}
         </label>
       </fieldset>
@@ -103,8 +104,8 @@ export function ProfileForm() {
       {f.isEvaluator && (
         <section className="flex flex-col gap-4 rounded-xl bg-surface p-4">
           <h3 className="font-semibold">{t("evaluatorSection")}</h3>
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" checked={f.accepting} onChange={(e) => set("accepting", e.target.checked)} className="h-4 w-4 accent-brand" />
+          <label className="check font-medium">
+            <input type="checkbox" checked={f.accepting} onChange={(e) => set("accepting", e.target.checked)} className="h-5 w-5 shrink-0 accent-brand" />
             {t("pAccepting")}
           </label>
           {!f.accepting && (profile?.missedStreak ?? 0) >= AWAY_AFTER && <p className="text-sm text-muted">{t("awayNote", { n: profile?.missedStreak ?? 0 })}</p>}
@@ -135,7 +136,7 @@ export function ProfileForm() {
                     key={c}
                     aria-pressed={on}
                     onClick={() => set("categories", on ? f.categories.filter((x) => x !== c) : [...f.categories, c].slice(0, 6))}
-                    className={`rounded-full border px-3 py-1 text-sm ${on ? "border-brand bg-brand text-white" : "border-line bg-white"}`}
+                    className="pick"
                   >
                     {CATEGORY_LABELS[c]}
                   </button>
@@ -144,13 +145,13 @@ export function ProfileForm() {
             </div>
           </fieldset>
           {field("skills", t("pSkills"), 300, { placeholder: "Laravel, React, MySQL, Figma" })}
-          <fieldset className="flex flex-wrap gap-4">
+          <fieldset className="flex flex-wrap gap-x-6">
             <legend className="label">{t("pModes")}</legend>
             {(["online", "onsite"] as const).map((m) => (
-              <label key={m} className="flex items-center gap-2 text-sm">
+              <label key={m} className="check">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 accent-brand"
+                  className="h-5 w-5 shrink-0 accent-brand"
                   checked={f.modes.includes(m)}
                   onChange={(e) => set("modes", e.target.checked ? [...f.modes, m] : f.modes.filter((x) => x !== m))}
                 />
@@ -169,11 +170,15 @@ export function ProfileForm() {
       )}
 
       <ErrorText code={err} />
-      <div className="flex items-center gap-3">
-        <button className="btn-primary" disabled={busy}>
+      <div className="flex flex-wrap items-center gap-3">
+        <button className="btn-primary min-w-28" disabled={busy}>
           {t("save")}
         </button>
-        {saved && !isNew && <span className="text-sm font-semibold text-brand">{t("saved")}</span>}
+        {saved && !isNew && (
+          <PanySays role="status">
+            <span className="font-semibold">{t("saved")}</span>
+          </PanySays>
+        )}
       </div>
       {saved && isNew && (
         <section className="flex flex-col gap-3 rounded-xl bg-brand-soft p-4" role="status">

@@ -26,7 +26,7 @@ function Results({ id }: { id: string }) {
   }, [id, uid]);
 
   if (title === undefined || evals === null) return <Spinner />;
-  if (title === null) return <Empty img="empty-projects" text={t("notFound")} />;
+  if (title === null) return <Empty pose="oops" text={t("notFound")} />;
 
   const table = tabulate(evals.map((e) => e.scores));
 
@@ -41,7 +41,7 @@ function Results({ id }: { id: string }) {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
-      <Link href={`/p/${id}`} className="text-sm text-brand underline">
+      <Link href={`/p/${id}`} className="inline-flex min-h-11 w-fit items-center text-sm text-brand underline">
         {title}
       </Link>
       <div className="flex flex-col gap-1">
@@ -52,7 +52,7 @@ function Results({ id }: { id: string }) {
       </div>
 
       {table.n === 0 ? (
-        <Empty img="empty-projects" text={t("resultsNone")} />
+        <Empty text={t("resultsNone")} />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3">

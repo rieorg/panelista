@@ -19,7 +19,7 @@ export function ProjectView({ id }: { id: string }) {
   );
 
   if (p === undefined) return <Spinner />;
-  if (p === null) return <Empty img="empty-projects" text={t("notFound")} />;
+  if (p === null) return <Empty pose="oops" text={t("notFound")} />;
   const own = user?.uid === p.ownerUid;
   const short = profile && profile.yearsExp < p.minYears;
   const statusKey = p.status === "open" ? "statusOpen" : p.status === "filled" ? "statusFilled" : "statusClosed";
@@ -34,8 +34,8 @@ export function ProjectView({ id }: { id: string }) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <article className="card flex flex-col gap-4 p-5">
+    <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_288px] lg:grid-cols-[minmax(0,1fr)_320px]">
+      <article className="card flex min-w-0 flex-col gap-4 p-5">
         <span className={`chip w-fit ${p.status === "open" ? "" : "bg-line text-muted"}`}>{t(statusKey)}</span>
         <h1 className="text-2xl font-bold">{p.title}</h1>
         <p className="text-muted">
@@ -76,9 +76,9 @@ export function ProjectView({ id }: { id: string }) {
         )}
       </article>
 
-      <aside className="card flex h-fit flex-col gap-3 p-5 lg:sticky lg:top-20">
+      <aside className="card flex h-fit flex-col gap-3 p-5 md:sticky md:top-20">
         <p className="text-sm text-muted">{t("postedBy")}</p>
-        <Link href={`/e/${p.ownerUid}`} className="flex items-center gap-2 font-semibold">
+        <Link href={`/e/${p.ownerUid}`} className="flex min-h-11 items-center gap-2 font-semibold">
           <Avatar src={p.ownerPhoto} name={p.ownerName} size={36} />
           {p.ownerName}
         </Link>

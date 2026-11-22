@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Palette from brand/brand.json (Codex brand pass). */
+/* Palette from brand/brand.json (Codex brand pass), plus the Pany bubble tints from design/pany. */
 @theme {
   --color-brand: #176b55;
   --color-brand-dark: #10483f;
@@ -11,7 +11,17 @@
   --color-muted: #65756f;
   --color-surface: #f5f8f3;
   --color-line: #dfe7e2;
+  --color-line-strong: #cfdad4;
+  /* Pany's pencil yellow for tips, a soft red for "oops". Text on them stays ink. */
+  --color-tip: #fdf3d8;
+  --color-tip-ink: #7a5a12;
+  --color-oops: #fdecea;
+  --color-oops-ink: #9b1c13;
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  /* Type tops out at semibold (the Nov 2026 redesign dropped 700 and 800), so font-bold and font-extrabold mean 600. */
+  --font-weight-bold: 600;
+  --font-weight-extrabold: 600;
 }
 
 body {
@@ -19,9 +29,16 @@ body {
   color: var(--color-ink);
 }
 
-/* Small shared primitives, kept here instead of a component library. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* Small shared primitives, kept here instead of a component library.
+   Everything tappable is at least 44 px tall (min-h-11). */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-center text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
   @apply btn bg-brand text-white hover:bg-brand-dark;
@@ -32,17 +49,52 @@ body {
 @utility btn-danger {
   @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50;
 }
+/* Text-only button or link that still gives a 44 px target. */
+@utility btn-quiet {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium text-muted transition-colors hover:bg-brand-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-50;
+}
 @utility card {
   @apply rounded-2xl border border-line bg-white;
 }
+/* 16 px text on phones: iOS zooms the page when a focused field is smaller. */
 @utility input {
-  @apply w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+  @apply min-h-11 w-full rounded-xl border border-line-strong bg-white px-3 py-2.5 text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 sm:text-sm;
 }
 @utility label {
   @apply mb-1 block text-sm font-medium text-ink;
 }
 @utility chip {
-  @apply inline-flex items-center rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand-dark;
+  @apply inline-flex items-center rounded-md bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand-dark;
+}
+/* A checkbox or radio with its text: the whole row is the target. */
+@utility check {
+  @apply flex min-h-11 cursor-pointer items-center gap-2 text-sm;
+}
+/* Pick-one or pick-many option. Works as a toggle button (aria-pressed, aria-checked)
+   or as a label wrapping a visually hidden native checkbox or radio. */
+@utility pick {
+  @apply inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[10px] border border-line-strong bg-white px-3.5 text-center text-sm text-ink transition-colors hover:bg-brand-soft aria-checked:border-brand aria-checked:bg-brand aria-checked:font-semibold aria-checked:text-white aria-pressed:border-brand aria-pressed:bg-brand aria-pressed:font-semibold aria-pressed:text-white has-[:checked]:border-brand has-[:checked]:bg-brand has-[:checked]:font-semibold has-[:checked]:text-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand;
+}
+/* Shown only when something takes over a second (Pany on loading states). */
+@utility after-1s {
+  opacity: 0;
+  animation: fade-in 0.2s 1s forwards;
+}
+/* One onboarding step arriving. */
+@utility step-in {
+  animation: step-in 0.24s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 @page {
@@ -60,4 +112,16 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+/* Reduced motion: nothing slides or fades. Delays still run, so late content still appears. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

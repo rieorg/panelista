@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { sendEmailVerification } from "firebase/auth";
 import { useApp } from "./app-provider";
+import { Pany, PanySays } from "./pany";
 import { ProfileForm } from "./profile-form";
 import { Spinner } from "./ui";
 
@@ -50,12 +51,15 @@ function VerifyEmail() {
   }
 
   return (
-    <div className="card mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/empty-inbox.svg" alt="" className="h-28" />
+    <div className="card mx-auto flex max-w-md flex-col items-center gap-4 p-6 text-center sm:p-8">
+      <Pany pose="tip" size={144} />
       <h1 className="text-xl font-bold">{t("verifyTitle2")}</h1>
       <p className="text-muted">{t("verifySent", { email: user!.email ?? "" })}</p>
-      {msg && <p className="text-sm text-red-700">{msg}</p>}
+      {msg && (
+        <PanySays tone="tip" role="status" className="text-left">
+          {msg}
+        </PanySays>
+      )}
       <div className="flex flex-wrap justify-center gap-2">
         <button className="btn-primary" disabled={busy} onClick={check}>
           {t("verifyDone")}

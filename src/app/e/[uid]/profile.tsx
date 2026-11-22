@@ -25,12 +25,14 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
   }, [uid]);
 
   if (p === undefined) return <Spinner />;
-  if (p === null) return <Empty img="empty-projects" text={t("notFound")} />;
+  if (p === null) return <Empty pose="oops" text={t("notFound")} />;
   const own = user?.uid === uid;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="flex flex-col gap-6">
+    // Two columns from tablet up. On phones the wrapper dissolves (contents) so the action
+    // card can sit right under the name instead of after every review.
+    <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_288px] lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="contents md:flex md:flex-col md:gap-6">
         <section className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
           <Avatar src={p.photoURL} name={p.name} size={96} />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -51,7 +53,7 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
         </section>
 
         {(p.bio || p.titles.length > 0) && (
-          <section className="card flex flex-col gap-3 p-5">
+          <section className="card order-2 flex flex-col gap-3 p-5">
             <h2 className="font-bold">{t("about")}</h2>
             {p.titles.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -66,7 +68,7 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
           </section>
         )}
 
-        <section className="card flex flex-col gap-3 p-5">
+        <section className="card order-2 flex flex-col gap-3 p-5">
           <h2 className="font-bold">
             {t("reviews")} ({reviews.length < 30 ? reviews.length : "30+"})
           </h2>
@@ -100,8 +102,8 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
         </section>
       </div>
 
-      <aside className="flex flex-col gap-4">
-        <div className="card flex flex-col gap-3 p-5 lg:sticky lg:top-20">
+      <aside className="order-1 flex flex-col gap-4 md:order-none">
+        <div className="card flex flex-col gap-3 p-5 md:sticky md:top-20">
           <span className={`font-semibold ${p.accepting ? "text-brand" : "text-muted"}`}>{p.accepting ? t("accepting") : t("notAccepting")}</span>
           {own ? (
             <Link href="/me?tab=profile" className="btn-ghost">
@@ -133,7 +135,7 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
           )}
           {p.modes.length > 0 && <p className="text-sm text-muted">{p.modes.map((m) => t(m)).join(" · ")}</p>}
           {p.linkedin && (
-            <a href={p.linkedin} target="_blank" rel="noopener noreferrer nofollow" className="truncate text-sm text-brand underline">
+            <a href={p.linkedin} target="_blank" rel="noopener noreferrer nofollow" className="block truncate py-3 text-sm text-brand underline">
               {p.linkedin.replace(/^https:\/\/(www\.)?/, "")}
             </a>
           )}

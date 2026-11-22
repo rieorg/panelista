@@ -60,7 +60,11 @@ export default function ProjectsPage() {
       {items === null ? (
         <Spinner />
       ) : items.length === 0 ? (
-        <Empty img="empty-projects" text={t("noProjects")} />
+        <Empty text={t("noProjects")}>
+          <Link href={user ? "/me/projects/new" : "/login?next=%2Fme%2Fprojects%2Fnew"} className="btn-primary">
+            {t("ctaPost")}
+          </Link>
+        </Empty>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p) => (

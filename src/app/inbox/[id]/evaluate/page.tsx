@@ -32,7 +32,7 @@ function EvaluateForm({ id }: { id: string }) {
   }, [id]);
 
   if (r === undefined) return <Spinner />;
-  if (r === null || r.evaluatorUid !== user!.uid || !["accepted", "completed"].includes(r.status)) return <Empty img="empty-inbox" text={t("notFound")} />;
+  if (r === null || r.evaluatorUid !== user!.uid || !["accepted", "completed"].includes(r.status)) return <Empty pose="oops" text={t("notFound")} />;
 
   const missing = ISO_ITEM_IDS.filter((k) => !scores[k]).length;
 
@@ -52,7 +52,7 @@ function EvaluateForm({ id }: { id: string }) {
 
   return (
     <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-5">
-      <Link href={`/inbox/${id}`} className="text-sm text-brand underline">
+      <Link href={`/inbox/${id}`} className="inline-flex min-h-11 w-fit items-center text-sm text-brand underline">
         {t("certBack")}
       </Link>
       <div className="flex flex-col gap-1">
@@ -72,7 +72,7 @@ function EvaluateForm({ id }: { id: string }) {
               </div>
               <div role="radiogroup" aria-label={i.name} className="flex shrink-0 gap-1">
                 {[...ISO_SCALE].reverse().map((s) => (
-                  <label key={s.score} title={s.label} className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border font-semibold focus-within:ring-2 focus-within:ring-brand ${scores[i.id] === s.score ? "border-brand bg-brand text-white" : "border-line bg-white"}`}>
+                  <label key={s.score} title={s.label} className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border font-semibold focus-within:ring-2 focus-within:ring-brand ${scores[i.id] === s.score ? "border-brand bg-brand text-white" : "border-line bg-white"}`}>
                     <input
                       type="radio"
                       name={i.id}
