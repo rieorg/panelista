@@ -34,7 +34,8 @@ export function ProjectView({ id }: { id: string }) {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_288px] lg:grid-cols-[minmax(0,1fr)_320px]">
+    // minmax(0,1fr) and break-words: a pasted link in a title or abstract wraps instead of widening the page.
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 break-words md:grid-cols-[minmax(0,1fr)_288px] lg:grid-cols-[minmax(0,1fr)_320px]">
       <article className="card flex min-w-0 flex-col gap-4 p-5">
         <span className={`chip w-fit ${p.status === "open" ? "" : "bg-line text-muted"}`}>{t(statusKey)}</span>
         <h1 className="text-2xl font-bold">{p.title}</h1>

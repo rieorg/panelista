@@ -30,14 +30,15 @@ export function EvaluatorProfile({ uid }: { uid: string }) {
 
   return (
     // Two columns from tablet up. On phones the wrapper dissolves (contents) so the action
-    // card can sit right under the name instead of after every review.
-    <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_288px] lg:grid-cols-[minmax(0,1fr)_320px]">
+    // card can sit right under the name instead of after every review. The single phone column
+    // is minmax(0,1fr) with break-words, so a pasted link in a bio wraps instead of widening the page.
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 break-words md:grid-cols-[minmax(0,1fr)_288px] lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="contents md:flex md:flex-col md:gap-6">
         <section className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
           <Avatar src={p.photoURL} name={p.name} size={96} />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold">{p.name}</h1>
+              <h1 className="min-w-0 text-2xl font-bold">{p.name}</h1>
               {p.verified && <VerifiedBadge size={24} />}
               {p.isAdmin && <AdminBadge />}
             </div>

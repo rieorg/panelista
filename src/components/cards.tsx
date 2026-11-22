@@ -5,6 +5,10 @@ import type { Profile, Project } from "@/lib/types";
 import { useApp } from "./app-provider";
 import { Avatar, CategoryChips, fmtDate, Stars, VerifiedBadge } from "./ui";
 
+// min-w-0 and break-words: one unbroken word in a title or abstract must wrap inside its card.
+// Without them it set the width of the whole list column and the page scrolled sideways on phones.
+const CARD = "card flex min-w-0 flex-col gap-3 p-4 break-words transition hover:-translate-y-0.5 hover:shadow-md";
+
 /** "Answered 3 of 4 requests · Usually responds within a day"; the rate shows once any invite was answered or let expire. */
 export function useResponseText() {
   const { t } = useApp();
@@ -22,7 +26,7 @@ export function EvaluatorCard({ p }: { p: Profile }) {
   const { t } = useApp();
   const resp = useResponseText();
   return (
-    <Link href={`/e/${p.uid}`} className="card flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+    <Link href={`/e/${p.uid}`} className={CARD}>
       <div className="flex items-start gap-3">
         <Avatar src={p.photoURL} name={p.name} size={56} />
         <div className="min-w-0 flex-1">
@@ -50,7 +54,7 @@ export function ProjectCard({ p }: { p: Project }) {
   const { t, lang } = useApp();
   const pct = Math.min(100, Math.round((p.acceptedCount / p.needed) * 100));
   return (
-    <Link href={`/p/${p.id}`} className="card flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+    <Link href={`/p/${p.id}`} className={CARD}>
       <div>
         <h3 className="line-clamp-2 font-bold">{p.title}</h3>
         <p className="text-sm text-muted">
