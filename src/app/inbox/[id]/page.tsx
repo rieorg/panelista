@@ -39,11 +39,13 @@ function Thread({ id }: { id: string }) {
       }, () => {}),
     [id],
   );
+  // To the end when messages arrive, and again when the strip under the header shows up or the request changes
+  // state: both change the room the list has, and the last message or the rating form slid out of view.
   // Braces matter: Chrome (151+) returns a Promise from scrollIntoView, and
   // React calls whatever an effect returns as its cleanup ("i is not a function").
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [msgs.length]);
+  }, [msgs.length, formUrl, evaluated, r?.status]);
 
   if (r === undefined) return <Spinner />;
   if (r === null) return <Empty pose="oops" text={t("notFound")} />;
@@ -54,6 +56,10 @@ function Thread({ id }: { id: string }) {
   // Chat opens once the request is accepted (no unsolicited message floods).
   const canChat = r.status === "accepted" || r.status === "completed";
   const reviewed = side === "student" ? r.reviewedByStudent : r.reviewedByEvaluator;
+  // Under the header: the school's form link, the built-in ISO form (evaluator) or its results (owner), and,
+  // only while the evaluation is still open, a nudge for the owner to add a form link. Nothing to offer, no strip.
+  const nudge = side === "student" && !formUrl && r.status === "accepted";
+  const strip = canChat && formUrl !== null && (!!formUrl || side === "evaluator" || evaluated || nudge);
 
   async function send() {
     const body = text.trim().slice(0, 2000);
@@ -82,25 +88,34 @@ function Thread({ id }: { id: string }) {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-10rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-line bg-white">
-      <header className="flex flex-wrap items-center gap-x-3 border-b border-line px-3 py-2">
-        <Link href={`/e/${other.uid}`} className="flex min-h-11 items-center gap-2">
-          <Avatar src={other.photo} name={other.name} size={40} />
-          <span className="font-semibold">{other.name}</span>
+    // Phones: edge to edge and as tall as the screen under the site header (57px there, see chrome.tsx).
+    <div className="mx-auto flex h-[calc(100dvh-10rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-line bg-white max-sm:-mx-4 max-sm:-my-6 max-sm:h-[calc(100dvh-57px)] max-sm:rounded-none max-sm:border-0">
+      <header className="flex flex-wrap items-center gap-x-2 border-b border-line px-2 py-1 sm:gap-x-3 sm:px-3 sm:py-2">
+        {/* Phones: the way back to the inbox, since the site's link row is hidden on this screen. */}
+        <Link href="/me?tab=inbox" aria-label={t("navInbox")} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface sm:hidden">
+          <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
         </Link>
-        <span className="chip">{t(`st_${r.status}`)}</span>
+        <Link href={`/e/${other.uid}`} className="flex min-h-11 min-w-0 items-center gap-2">
+          <Avatar src={other.photo} name={other.name} size={40} />
+          <span className="truncate font-semibold">{other.name}</span>
+        </Link>
+        <span className="chip shrink-0">{t(`st_${r.status}`)}</span>
+        {/* Phones: the project title starts a second row (45% of the header cut every title short),
+            with the certificate beside it once there is one. Wider screens keep one row, title at the right. */}
+        <span className="basis-full sm:hidden" />
+        <Link href={`/p/${r.projectId}`} className="min-w-0 flex-1 truncate px-1 py-3 text-sm text-brand underline sm:order-last sm:ml-auto sm:max-w-[45%] sm:flex-none sm:px-0">
+          {r.projectTitle}
+        </Link>
         {r.status === "completed" && (
-          <Link href={`/inbox/${id}/certificate`} className="btn-ghost py-1.5">
+          <Link href={`/inbox/${id}/certificate`} className="btn-ghost shrink-0 py-1.5">
             {t("certificate")}
           </Link>
         )}
-        {/* Its own full row on phones, where 45% of the header cut every title short. */}
-        <Link href={`/p/${r.projectId}`} className="w-full truncate py-3 text-sm text-brand underline sm:ml-auto sm:w-auto sm:max-w-[45%]">
-          {r.projectTitle}
-        </Link>
       </header>
-      {canChat && formUrl !== null && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-line bg-brand-soft/50 p-3 text-sm">
+      {strip && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-line bg-brand-soft/50 p-2 text-sm sm:p-3">
           {formUrl && <FormLink href={formUrl} />}
           {side === "evaluator" ? (
             <Link href={`/inbox/${id}/evaluate`} className={formUrl ? "btn-ghost" : "btn-primary"}>
@@ -108,7 +123,7 @@ function Thread({ id }: { id: string }) {
             </Link>
           ) : (
             <>
-              {!formUrl && (
+              {nudge && (
                 <p>
                   {t("noFormOwner")}{" "}
                   <Link href={`/me/projects/${r.projectId}/edit`} className="font-semibold text-brand underline">
@@ -126,7 +141,7 @@ function Thread({ id }: { id: string }) {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto bg-surface p-4">
+      <div className="flex-1 overflow-y-auto bg-surface p-3 sm:p-4">
         <p className="mb-4 rounded-xl bg-accent/20 p-3 text-center text-xs">{t("safety")}</p>
         <ul className="flex flex-col gap-2">
           {msgs.map((m) =>
@@ -141,6 +156,14 @@ function Thread({ id }: { id: string }) {
             ),
           )}
         </ul>
+        {/* Phones: the hint for the button below reads here, at the end of the thread, so the bar under it stays two rows. */}
+        {r.status === "accepted" && <p className="mt-3 text-center text-xs text-muted sm:hidden">{t(side === "student" ? "completeHint" : "completeEvalHint")}</p>}
+        {/* The rating form is the last thing in the thread, not a fixed block that leaves the messages a slit. */}
+        {r.status === "completed" && !reviewed && (
+          <div className="mt-4">
+            <RateForm requestId={id} name={other.name} required={side === "student"} />
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -166,16 +189,15 @@ function Thread({ id }: { id: string }) {
           ))}
         {r.status === "accepted" && (
           <div className="flex flex-wrap items-center gap-2">
-            <button className="btn-primary" disabled={busy} onClick={() => act("complete")}>
+            <button className="btn-primary max-sm:flex-1" disabled={busy} onClick={() => act("complete")}>
               {t(side === "student" ? "complete" : "completeEval")}
             </button>
-            <span className="text-xs text-muted">{t(side === "student" ? "completeHint" : "completeEvalHint")}</span>
+            <span className="text-xs text-muted max-sm:hidden">{t(side === "student" ? "completeHint" : "completeEvalHint")}</span>
             <button className="btn-ghost ml-auto py-1.5" disabled={busy} onClick={() => act("cancel")}>
               {t("cancelReq")}
             </button>
           </div>
         )}
-        {r.status === "completed" && !reviewed && <RateForm requestId={id} name={other.name} required={side === "student"} />}
         {canChat && (
           <form
             className="flex gap-2"

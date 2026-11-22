@@ -24,6 +24,10 @@ export function Header() {
   // Rating the evaluator is required (the API blocks new asks until then), so keep it in view.
   const due = user && inbox?.find((r) => r.studentUid === user.uid && r.status === "completed" && !r.reviewedByStudent);
 
+  // A thread on a phone is one focused screen, like any chat: its own header has the way back,
+  // so the link row steps aside there and the messages get the room.
+  const inThread = /^\/inbox\/[^/]+$/.test(path);
+
   const links = [
     { href: "/evaluators", label: t("navEvaluators") },
     { href: "/projects", label: t("navProjects") },
@@ -33,10 +37,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur print:hidden">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 pt-1.5 sm:pb-1.5">
+      <div className={`mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 pt-1.5 sm:pb-1.5 ${inThread ? "pb-1.5" : ""}`}>
         <Logo />
         {/* Phones: a second row where every link is an equal, 44 px tall share of the width. */}
-        <nav aria-label="Main" className="order-3 flex w-full gap-1 pb-1.5 sm:order-none sm:w-auto sm:pb-0">
+        <nav aria-label="Main" className={`order-3 w-full gap-1 pb-1.5 sm:order-none sm:flex sm:w-auto sm:pb-0 ${inThread ? "hidden" : "flex"}`}>
           {links.map((l) => {
             const active = path === l.href.split("?")[0];
             return (
