@@ -113,6 +113,32 @@ export async function body(req: Request) {
 }
 
 /**
+ * One shared result per server instance for `ttlMs`. Concurrent and repeat callers get the same promise, so
+ * requests that get past the CDN cache cost one Firestore query per window, not one each. A failed load is not kept.
+ */
+export function memo<T>(ttlMs: number, load: () => Promise<T>, now: () => number = Date.now): () => Promise<T> {
+  let hit: { at: number; value: Promise<T> } | undefined;
+  return () => {
+    if (hit && now() - hit.at < ttlMs) return hit.value;
+    const mine = { at: now(), value: load() };
+    hit = mine;
+    mine.value.catch(() => {
+      if (hit === mine) hit = undefined;
+    });
+    return mine.value;
+  };
+}
+
+/**
+ * The public lists are cached by URL, and "?x=1", "?x=2"... are all different URLs: each would run the
+ * handler and read the whole list again. A request with a query string is sent to the one cached address.
+ */
+export function onlyPlainUrl(req: Request): Response | null {
+  const url = new URL(req.url);
+  return url.search ? new Response(null, { status: 308, headers: { location: url.pathname } }) : null;
+}
+
+/**
  * A finished evaluation obliges the student to rate the evaluator: that rating
  * is the trade for free help. Until they do, nothing that asks for more help
  * (new project, invite, accepting an offer) goes through. Equality-only query,

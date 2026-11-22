@@ -1,5 +1,5 @@
 import { Timestamp } from "firebase-admin/firestore";
-import { body, db, FieldValue, HttpError, rateLimit, requireNoPendingReview, requireUser, route } from "@/lib/server";
+import { body, db, FieldValue, HttpError, memo, onlyPlainUrl, rateLimit, requireNoPendingReview, requireUser, route } from "@/lib/server";
 import { projectSchema } from "@/lib/schemas";
 import { looksLikeSecret } from "@/lib/domain";
 
@@ -10,15 +10,19 @@ const OPEN_MAX = 300;
 // Only what ProjectCard and the category filter use.
 const CARD_FIELDS = ["ownerName", "ownerPhoto", "title", "abstract", "school", "course", "categories", "needed", "acceptedCount", "minYears", "deadline"];
 
-export async function GET() {
+// Shared inside the server instance for 5 minutes too, and query strings are redirected away (see /api/evaluators).
+const load = memo(300_000, async () => {
   const snap = await db().collection("projects").where("status", "==", "open").orderBy("createdAt", "desc").limit(OPEN_MAX).select(...CARD_FIELDS).get();
-  const rows = snap.docs.map((d) => {
+  return snap.docs.map((d) => {
     const { deadline, abstract, ...p } = d.data();
     // The card shows three lines of the abstract; the full text is on the project page.
     return { ...p, id: d.id, abstract: String(abstract ?? "").slice(0, 400), deadline: deadline instanceof Timestamp ? deadline.toMillis() : 0 };
   });
+});
+
+export async function GET(req: Request) {
   // Vercel-CDN-Cache-Control is read only by Vercel's CDN, so the browser still sees no-store (next.config.ts).
-  return Response.json(rows, { headers: { "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=3600" } });
+  return onlyPlainUrl(req) ?? Response.json(await load(), { headers: { "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=3600" } });
 }
 
 export const POST = route(async (req) => {

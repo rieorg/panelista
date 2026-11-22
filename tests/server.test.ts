@@ -8,8 +8,10 @@ import { z } from "zod";
 delete process.env.FIRESTORE_EMULATOR_HOST;
 delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
 delete process.env.FIREBASE_SERVICE_ACCOUNT_B64;
-const { body, HttpError, requireAdmin, requireUser, route } = await import("../src/lib/server.ts");
+const { body, HttpError, memo, onlyPlainUrl, requireAdmin, requireUser, route } = await import("../src/lib/server.ts");
 const cron = await import("../src/app/api/cron/route.ts");
+const evaluators = await import("../src/app/api/evaluators/route.ts");
+const projects = await import("../src/app/api/projects/route.ts");
 
 type Handler = (req: Request, ctx: { params: Promise<Record<string, string>> }) => Promise<Response>;
 const SITE = "https://panelista.vercel.app";
@@ -109,6 +111,46 @@ test("cron: only the exact Bearer secret gets in, and an unset secret lets nobod
   } finally {
     if (before === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = before;
+  }
+});
+
+test("memo: one load per window, shared by concurrent callers; a failure is not kept", async () => {
+  let clock = 1_000_000;
+  let loads = 0;
+  let fail = false;
+  const get = memo(300_000, async () => {
+    loads++;
+    if (fail) throw new Error("firestore down");
+    return { n: loads };
+  }, () => clock);
+
+  const [a, b, c] = await Promise.all([get(), get(), get()]);
+  assert.equal(loads, 1, "three requests at once make one query");
+  assert.equal(a, b);
+  assert.equal(b, c);
+  clock += 299_999;
+  assert.deepEqual(await get(), { n: 1 }, "still inside the window");
+  clock += 1;
+  assert.deepEqual(await get(), { n: 2 }, "the window is over: load again");
+
+  clock += 300_000;
+  fail = true;
+  await assert.rejects(get(), /firestore down/);
+  await assert.rejects(get(), /firestore down/, "the failure was not cached: this is a second attempt");
+  assert.equal(loads, 4);
+  fail = false;
+  assert.deepEqual(await get(), { n: 5 }, "and it recovers as soon as the load works");
+});
+
+test("public lists: a query string is redirected to the one cached URL without reading anything", async () => {
+  // One GET of these reads up to 500 documents with no login, and every "?x=..." is a new CDN cache entry.
+  for (const [mod, path] of [[evaluators, "/api/evaluators"], [projects, "/api/projects"]] as const) {
+    for (const query of ["?x=1", "?cb=829347", "?a=1&b=2"]) {
+      const res = await mod.GET(new Request(`${SITE}${path}${query}`));
+      assert.equal(res.status, 308, `${path}${query}`);
+      assert.equal(res.headers.get("location"), path);
+    }
+    assert.equal(onlyPlainUrl(new Request(`${SITE}${path}`)), null, "the plain URL is served");
   }
 });
 
