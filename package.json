@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --import ./tests/hooks.mjs --test tests/*.test.ts",
+    "test:emu": "npx -y firebase-tools@15 emulators:exec --config firebase.test.json --only auth,firestore --project demo-panelista-test \"node --import ./tests/hooks.mjs --test --test-concurrency=1 tests/emu/*.test.ts\"",
     "typegen": "next typegen",
     "emulators": "npx -y firebase-tools@15 emulators:start --project demo-panelista"
   },

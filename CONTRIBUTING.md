@@ -47,9 +47,13 @@ npm run dev            # terminal 2: http://localhost:3000
 npm run lint
 npm run typegen && npx tsc --noEmit
 npm test
+npm run test:emu       # optional: security rules and API handlers on the emulators (Java 21+)
 ```
 
-GitHub Actions runs the same checks on every pull request.
+GitHub Actions runs the first three on every pull request. `npm run test:emu`
+starts its own Auth and Firestore emulators (ports 9199 and 8181, project
+`demo-panelista-test`), so it can run next to `npm run emulators`. Run it when
+you change `firestore.rules` or anything under `src/app/api`.
 
 - One change per pull request, kept small. Link the issue it closes.
 - Comment on an issue before starting so two people do not build the same thing.
