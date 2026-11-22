@@ -138,8 +138,8 @@ const card = (rows: string[]) => `<div style="margin:8px 0 4px;padding:12px 16px
 
 // The brand on top, the summary card, and no bare link. The first link on its own line under a line ending in ":"
 // becomes the main button (the call to action); other links get a plain button or their label. The "--" block
-// (the anti-scam line) goes small and grey.
-function mailHtml(text: string) {
+// (the anti-scam line) goes small and grey. Exported for tests.
+export function mailHtml(text: string) {
   let main = false;
   const blocks = text.split(/\n{2,}/).map((block) => {
     if (block.startsWith("--\n")) return `<span style="font-size:13px;color:#52525B">${line(block.slice(3).replace(/\n/g, " "))}</span>`;

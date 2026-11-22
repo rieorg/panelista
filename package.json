@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/*.test.ts",
+    "test": "node --import ./tests/hooks.mjs --test tests/*.test.ts",
     "typegen": "next typegen",
     "emulators": "npx -y firebase-tools@15 emulators:start --project demo-panelista"
   },

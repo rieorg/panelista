@@ -23,8 +23,13 @@ export const adminAuth = () => getAuth(app());
 export { FieldValue };
 
 export class HttpError extends Error {
-  constructor(public status: number, public code: string) {
+  status: number;
+  code: string;
+  // Plain fields, not parameter properties: Node's type stripping (npm test) only takes erasable syntax.
+  constructor(status: number, code: string) {
     super(code);
+    this.status = status;
+    this.code = code;
   }
 }
 
