@@ -296,6 +296,8 @@ export const STRINGS = {
   next: ["Next", "Next"],
   lostTitle: ["Ay, naligaw yata.", "This page wandered off."],
   backHome: ["Balik sa home", "Back to home"],
+  adminOnly: ["Para sa admins lang", "Admins only"],
+  adminOnlyText: ["Para lang sa Panelista admins ang page na 'to.", "This page is for Panelista admins."],
   roleQ: ["What brings you here?", "What brings you here?"],
   roleStudent: ["Student ako, naghahanap ng evaluator", "I'm a student looking for evaluators"],
   roleEvaluator: ["Professional ako, gusto kong mag-evaluate", "I'm a professional who wants to evaluate"],
