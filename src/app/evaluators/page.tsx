@@ -77,7 +77,8 @@ export default function EvaluatorsPage() {
         </div>
       </div>
       <div id="filters" className={`grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center ${open ? "grid" : "hidden"}`}>
-        <select className="input sm:w-auto" value={f.cat} onChange={(e) => set("cat", e.target.value)} aria-label={t("allCategories")}>
+        {/* Phones: one select per row. Two-up clipped the longer Taglish labels by a letter. */}
+        <select className="input max-sm:col-span-2 sm:w-auto" value={f.cat} onChange={(e) => set("cat", e.target.value)} aria-label={t("allCategories")}>
           <option value="">{t("allCategories")}</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -85,7 +86,7 @@ export default function EvaluatorsPage() {
             </option>
           ))}
         </select>
-        <select className="input sm:w-auto" value={f.years} onChange={(e) => set("years", Number(e.target.value))} aria-label={t("anyYears")}>
+        <select className="input max-sm:col-span-2 sm:w-auto" value={f.years} onChange={(e) => set("years", Number(e.target.value))} aria-label={t("anyYears")}>
           <option value={0}>{t("anyYears")}</option>
           {YEARS.map((n) => (
             <option key={n} value={n}>
@@ -93,7 +94,7 @@ export default function EvaluatorsPage() {
             </option>
           ))}
         </select>
-        <select className="input sm:w-auto" value={f.rating} onChange={(e) => set("rating", Number(e.target.value))} aria-label={t("anyRating")}>
+        <select className="input max-sm:col-span-2 sm:w-auto" value={f.rating} onChange={(e) => set("rating", Number(e.target.value))} aria-label={t("anyRating")}>
           <option value={0}>{t("anyRating")}</option>
           {RATINGS.map((n) => (
             <option key={n} value={n}>
@@ -101,7 +102,7 @@ export default function EvaluatorsPage() {
             </option>
           ))}
         </select>
-        <select className="input sm:w-auto" value={f.mode} onChange={(e) => set("mode", e.target.value)} aria-label={t("anyMode")}>
+        <select className="input max-sm:col-span-2 sm:w-auto" value={f.mode} onChange={(e) => set("mode", e.target.value)} aria-label={t("anyMode")}>
           <option value="">{t("anyMode")}</option>
           <option value="online">{t("online")}</option>
           <option value="onsite">{t("onsite")}</option>
