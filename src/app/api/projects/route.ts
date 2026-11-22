@@ -1,7 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { body, db, FieldValue, HttpError, memo, onlyPlainUrl, rateLimit, requireNoPendingReview, requireUser, route } from "@/lib/server";
 import { projectSchema } from "@/lib/schemas";
-import { looksLikeSecret } from "@/lib/domain";
+import { deadlineEnd, looksLikeSecret } from "@/lib/domain";
 
 // Public list of open projects for /projects, cached on Vercel's CDN like /api/evaluators:
 // Firestore is read at most once per region every 5 minutes instead of on every visit.
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
 export const POST = route(async (req) => {
   const user = await requireUser(req);
   const input = projectSchema.parse(await body(req));
-  if (new Date(input.deadline).getTime() < Date.now() - 864e5) throw new HttpError(400, "deadline-past");
+  if (deadlineEnd(input.deadline).getTime() < Date.now()) throw new HttpError(400, "deadline-past");
   if (looksLikeSecret(input.abstract)) throw new HttpError(400, "secret-in-public");
   const owner = await db().doc(`profiles/${user.uid}`).get();
   if (!owner.exists) throw new HttpError(400, "no-profile");
@@ -37,7 +37,7 @@ export const POST = route(async (req) => {
   const ref = db().collection("projects").doc();
   await ref.set({
     ...input,
-    deadline: new Date(input.deadline + "T23:59:59+08:00"),
+    deadline: deadlineEnd(input.deadline),
     stackLower: input.stack.map((s) => s.toLowerCase()),
     ownerUid: user.uid,
     ownerName: owner.get("name"),

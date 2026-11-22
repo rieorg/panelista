@@ -1,7 +1,7 @@
 // Request rules, ranking and copy checks beyond tests/logic.test.ts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { identityChanged, looksLikeSecret, rankScore, requestId, reviewId, sideOf, transition, type Action, type RequestLike, type RequestStatus, type Side } from "../src/lib/domain.ts";
+import { deadlineEnd, identityChanged, looksLikeSecret, rankScore, requestId, reviewId, sideOf, transition, type Action, type RequestLike, type RequestStatus, type Side } from "../src/lib/domain.ts";
 import { errorKey, STRINGS, translate } from "../src/lib/i18n.ts";
 import { ISO_ITEM_IDS, tabulate, toTsv } from "../src/lib/iso25010.ts";
 import { sniff } from "../worker/src/sniff.ts";
@@ -133,4 +133,13 @@ test("upload sniffing: short, truncated and look-alike files are not a known typ
   assert.equal(sniff(new TextEncoder().encode("PK\u0003\u0004 docx or zip")), null);
   assert.equal(sniff(new TextEncoder().encode("<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg'>")), null);
   assert.deepEqual(sniff(new TextEncoder().encode("%PDF-1.7 <script>alert(1)</script>")), { type: "application/pdf", ext: "pdf" }, "served as a PDF, never as HTML");
+});
+
+test("a deadline is the last second of that day in the Philippines, whatever the server's time zone", () => {
+  assert.equal(deadlineEnd("2026-11-22").toISOString(), "2026-11-22T15:59:59.000Z");
+  assert.equal(deadlineEnd("2027-01-01").toISOString(), "2027-01-01T15:59:59.000Z");
+  // 03:30 on the 23rd in Manila is still the 22nd in UTC: the 22nd is over there, and the old UTC check let it through.
+  const now = Date.parse("2026-11-22T19:30:00Z");
+  assert.ok(deadlineEnd("2026-11-22").getTime() < now, "yesterday in Manila is past");
+  assert.ok(deadlineEnd("2026-11-23").getTime() > now, "today in Manila is still open until midnight there");
 });

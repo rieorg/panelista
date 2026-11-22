@@ -114,6 +114,9 @@ export function identityChanged(a: Record<string, unknown>, b: Record<string, un
   return (Object.keys(IDENTITY) as (keyof typeof IDENTITY)[]).some((k) => (a[k] ?? IDENTITY[k]) !== (b[k] ?? IDENTITY[k]));
 }
 
+/** A project's deadline is the end of that calendar day in the Philippines (UTC+8, no daylight saving). */
+export const deadlineEnd = (isoDate: string) => new Date(`${isoDate}T23:59:59+08:00`);
+
 export function average(sum: number, count: number): number {
   return count ? Math.round((sum / count) * 10) / 10 : 0;
 }

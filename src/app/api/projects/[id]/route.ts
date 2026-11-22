@@ -1,12 +1,14 @@
-import { body, db, FieldValue, HttpError, requireUser, route } from "@/lib/server";
-import { projectPatchSchema } from "@/lib/schemas";
-import { looksLikeSecret, projectStatusFor } from "@/lib/domain";
+import type { Timestamp } from "firebase-admin/firestore";
+import { body, db, FieldValue, HttpError, rateLimit, requireUser, route } from "@/lib/server";
+import { id as idSchema, projectPatchSchema } from "@/lib/schemas";
+import { deadlineEnd, looksLikeSecret, projectStatusFor } from "@/lib/domain";
 
 export const PATCH = route(async (req, ctx) => {
   const user = await requireUser(req);
-  const { id } = await ctx.params;
+  const id = idSchema(64).parse((await ctx.params).id);
   const input = projectPatchSchema.parse(await body(req));
   if (input.abstract && looksLikeSecret(input.abstract)) throw new HttpError(400, "secret-in-public");
+  await rateLimit(user.uid, "project-edit", 60);
   const ref = db().doc(`projects/${id}`);
   await db().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
@@ -17,11 +19,15 @@ export const PATCH = route(async (req, ctx) => {
     // Otherwise the card reads "3/2 evaluators".
     if (rest.needed !== undefined && needed < (snap.get("acceptedCount") ?? 0)) throw new HttpError(409, "needed-below-accepted");
     const current = status === "closed" ? "closed" : status === "open" ? "open" : snap.get("status");
+    const next = projectStatusFor(current, snap.get("acceptedCount"), needed);
+    // A project past its deadline cannot be open: the hourly cron would close it again with no word to the owner.
+    const end = deadline ? deadlineEnd(deadline) : (snap.get("deadline") as Timestamp | undefined)?.toDate();
+    if (next !== "closed" && end && end.getTime() < Date.now()) throw new HttpError(400, "deadline-past");
     tx.update(ref, {
       ...rest,
       ...(rest.stack ? { stackLower: rest.stack.map((s) => s.toLowerCase()) } : {}),
-      ...(deadline ? { deadline: new Date(deadline + "T23:59:59+08:00") } : {}),
-      status: projectStatusFor(current, snap.get("acceptedCount"), needed),
+      ...(deadline ? { deadline: deadlineEnd(deadline) } : {}),
+      status: next,
       updatedAt: FieldValue.serverTimestamp(),
     });
   });

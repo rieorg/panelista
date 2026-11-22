@@ -1,5 +1,5 @@
 import { body, db, FieldValue, HttpError, rateLimit, requireNoPendingReview, requireUser, route } from "@/lib/server";
-import { actionSchema } from "@/lib/schemas";
+import { actionSchema, id as idSchema } from "@/lib/schemas";
 import { projectStatusFor, rankFor, sideOf, transition, type RequestLike } from "@/lib/domain";
 import { mails, notify, type MailReq } from "@/lib/mail";
 import type { Timestamp } from "firebase-admin/firestore";
@@ -8,7 +8,7 @@ const SYSTEM_TEXT = { accepted: "accepted", declined: "declined", cancelled: "ca
 
 export const POST = route(async (req, ctx) => {
   const user = await requireUser(req);
-  const { id } = await ctx.params;
+  const id = idSchema(200).parse((await ctx.params).id);
   const { action } = actionSchema.parse(await body(req));
   await rateLimit(user.uid, "action", 100);
   const ref = db().doc(`requests/${id}`);
