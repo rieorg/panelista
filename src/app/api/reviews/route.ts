@@ -1,4 +1,4 @@
-import { adminAuth, body, db, FieldValue, HttpError, requireUser, route } from "@/lib/server";
+import { adminAuth, body, db, FieldValue, HttpError, rateLimit, requireUser, route } from "@/lib/server";
 import { reviewSchema } from "@/lib/schemas";
 import { average, rankFor, reviewId, sideOf, type RequestLike } from "@/lib/domain";
 
@@ -7,6 +7,8 @@ const MIN_ACCOUNT_DAYS = 3;
 export const POST = route(async (req) => {
   const user = await requireUser(req);
   const input = reviewSchema.parse(await body(req));
+  // A review is written once per request and side, but every attempt costs an Auth lookup and a transaction's reads.
+  await rateLimit(user.uid, "review", 30);
   const reqRef = db().doc(`requests/${input.requestId}`);
   const accountCreated = Date.parse((await adminAuth().getUser(user.uid)).metadata.creationTime);
 

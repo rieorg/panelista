@@ -164,7 +164,6 @@ const NO_DAILY_LIMIT: Record<string, string> = {
   "appcheck/route.ts": "writes nothing",
   "cron/route.ts": "the Worker's hourly call, gated by CRON_SECRET",
   "admin/route.ts": "admins only",
-  "reviews/route.ts": "one review per request and side (deterministic id), so it cannot repeat",
 };
 
 test("every state-changing API route is wrapped, signed-in and rate limited, or listed as an exception", () => {
