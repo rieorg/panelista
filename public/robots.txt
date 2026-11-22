@@ -1,0 +1,11 @@
+# Crawlers stay off private and per-user routes: each hit there is a CDN request or a function call.
+# The two public lists stay open because /projects and /evaluators load them in the browser.
+User-agent: *
+Allow: /api/projects
+Allow: /api/evaluators
+Disallow: /api/
+Disallow: /__/
+Disallow: /admin
+Disallow: /inbox
+Disallow: /me$
+Disallow: /me/
