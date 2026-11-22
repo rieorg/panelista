@@ -103,6 +103,17 @@ export function looksLikeSecret(s: string): boolean {
   return /\b(user ?name|pass(word|wd|code)?|pwd)\s*[:=]/i.test(s) || /[\w.+-]+@[\w-]+(\.[\w-]+)+\s+\S*\d\S*/.test(s);
 }
 
+// What the Verified badge vouches for: the admin checks the proof against these. Missing reads as empty.
+const IDENTITY = { name: "", headline: "", linkedin: "", yearsExp: 0 } as const;
+
+/**
+ * True when a field the Verified badge vouches for differs between two profile-shaped objects.
+ * A profile edit that changes one drops the badge, and an application made before the change cannot be approved.
+ */
+export function identityChanged(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  return (Object.keys(IDENTITY) as (keyof typeof IDENTITY)[]).some((k) => (a[k] ?? IDENTITY[k]) !== (b[k] ?? IDENTITY[k]));
+}
+
 export function average(sum: number, count: number): number {
   return count ? Math.round((sum / count) * 10) / 10 : 0;
 }

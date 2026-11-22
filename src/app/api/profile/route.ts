@@ -1,6 +1,6 @@
 import { body, db, FieldValue, rateLimit, requireUser, route } from "@/lib/server";
 import { profileSchema } from "@/lib/schemas";
-import { rankFor, rankScore } from "@/lib/domain";
+import { identityChanged, rankFor, rankScore } from "@/lib/domain";
 
 // Upsert the caller's own profile. Server-owned fields (ratings, verified,
 // counters, banned) are never taken from the client.
@@ -21,8 +21,7 @@ export const PUT = route(async (req) => {
     };
     if (snap.exists) {
       // The badge vouches for who you are: changing identity fields drops it until re-reviewed.
-      const identityChanged = (["name", "headline", "linkedin", "yearsExp"] as const).some((k) => snap.get(k) !== input[k]);
-      const unverify = identityChanged && snap.get("verified") === true;
+      const unverify = identityChanged(snap.data() ?? {}, input) && snap.get("verified") === true;
       tx.update(ref, {
         ...base,
         ...(unverify ? { verified: false, rank: rankFor({ ...snap.data(), verified: false }) } : {}),

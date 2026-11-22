@@ -1,7 +1,10 @@
 import { adminAuth, body, db, FieldValue, HttpError, requireAdmin, route } from "@/lib/server";
 import { adminBanSchema, adminVerifySchema, id } from "@/lib/schemas";
-import { rankFor } from "@/lib/domain";
+import { identityChanged, rankFor } from "@/lib/domain";
 import { z } from "zod";
+
+// Shown to the user inside "Na-reject po: {r}. Pwede po kayong mag-submit ulit." / "Rejected: {r}. You can submit again."
+const STALE_REASON = "profile changed after applying (name, headline, link or years)";
 
 const schema = z.discriminatedUnion("op", [
   adminVerifySchema.extend({ op: z.literal("verify") }),
@@ -14,19 +17,26 @@ export const POST = route(async (req) => {
   const input = schema.parse(await body(req));
 
   if (input.op === "verify") {
-    const approve = input.decision === "approve";
-    await db().runTransaction(async (tx) => {
+    const stale = await db().runTransaction(async (tx) => {
       const pRef = db().doc(`profiles/${input.uid}`);
-      const p = await tx.get(pRef);
-      if (!p.exists) throw new HttpError(404, "not-found");
-      tx.update(pRef, { verified: approve, rank: rankFor({ ...p.data(), verified: approve }) });
-      tx.update(db().doc(`verifications/${input.uid}`), {
-        status: approve ? "approved" : "rejected",
-        reason: input.reason,
+      const vRef = db().doc(`verifications/${input.uid}`);
+      const [p, v] = await Promise.all([tx.get(pRef), tx.get(vRef)]);
+      if (!p.exists || !v.exists) throw new HttpError(404, "not-found");
+      // The admin checked the proof against the name, headline, link and years the application was sent with.
+      // If the profile says something else by now, approving would badge an identity nobody reviewed:
+      // the application is turned down with that reason, and the user applies again as they are now.
+      const stale = input.decision === "approve" && identityChanged(v.data() ?? {}, p.data() ?? {});
+      const verified = input.decision === "approve" && !stale;
+      tx.update(pRef, { verified, rank: rankFor({ ...p.data(), verified }) });
+      tx.update(vRef, {
+        status: verified ? "approved" : "rejected",
+        reason: stale ? STALE_REASON : input.reason,
         reviewerUid: admin.uid,
         reviewedAt: FieldValue.serverTimestamp(),
       });
+      return stale;
     });
+    return { ok: true, stale };
   } else if (input.op === "ban") {
     await adminAuth().updateUser(input.uid, { disabled: input.banned });
     if (input.banned) await adminAuth().revokeRefreshTokens(input.uid);

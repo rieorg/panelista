@@ -1,7 +1,7 @@
 // Request rules, ranking and copy checks beyond tests/logic.test.ts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { looksLikeSecret, rankScore, requestId, reviewId, sideOf, transition, type Action, type RequestLike, type RequestStatus, type Side } from "../src/lib/domain.ts";
+import { identityChanged, looksLikeSecret, rankScore, requestId, reviewId, sideOf, transition, type Action, type RequestLike, type RequestStatus, type Side } from "../src/lib/domain.ts";
 import { errorKey, STRINGS, translate } from "../src/lib/i18n.ts";
 import { ISO_ITEM_IDS, tabulate, toTsv } from "../src/lib/iso25010.ts";
 import { sniff } from "../worker/src/sniff.ts";
@@ -57,6 +57,17 @@ test("sides and ids", () => {
   assert.equal(sideOf(r, "s"), null, "uids are case sensitive");
   assert.equal(reviewId(requestId("p1", "E"), "student"), "p1_E_student");
   assert.notEqual(reviewId("p1_E", "student"), reviewId("p1_E", "evaluator"), "one review per direction");
+});
+
+test("the Verified badge vouches for name, headline, link and years: a change in any of them is an identity change", () => {
+  // Also the gate on approving: an application is compared with the profile as it is at approval time.
+  const applied = { name: "Ana Reyes", headline: "QA Engineer", linkedin: "https://linkedin.com/in/ana", yearsExp: 5, note: "COE attached", status: "pending" };
+  const now = { name: "Ana Reyes", headline: "QA Engineer", linkedin: "https://linkedin.com/in/ana", yearsExp: 5, bio: "new bio", titles: ["CTO"], skills: ["Go"], city: "Cebu", accepting: false };
+  assert.equal(identityChanged(applied, now), false, "bio, titles, skills and settings are not identity");
+  for (const patch of [{ name: "Dr. Ana Reyes" }, { headline: "CTO at Google" }, { linkedin: "https://linkedin.com/in/someone-else" }, { linkedin: "" }, { yearsExp: 15 }, { yearsExp: "5" }])
+    assert.equal(identityChanged(applied, { ...now, ...patch }), true, JSON.stringify(patch));
+  assert.equal(identityChanged({ name: "Ana" }, { name: "Ana", headline: "", linkedin: "", yearsExp: 0 }), false, "a missing field reads as empty");
+  assert.equal(identityChanged({}, {}), false);
 });
 
 test("rank stays inside its band and never rewards a miss", () => {
