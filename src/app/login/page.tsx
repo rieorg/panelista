@@ -16,21 +16,10 @@ import { auth } from "@/lib/firebase";
 import { useApp } from "@/components/app-provider";
 import { Bubble, Pany } from "@/components/pany";
 import { ErrorText } from "@/components/ui";
-import { REDIRECT_FLAG, signInLock } from "@/lib/signin";
+import { REDIRECT_FLAG, safeNext, signInLock } from "@/lib/signin";
 
 // Facebook, Messenger, Instagram and LINE in-app browsers: Google blocks OAuth there.
 const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Instagram|Line\//i;
-
-/** Only allow same-origin redirects after login (blocks //evil and /\evil). */
-function safeNext(raw: string | null) {
-  if (!raw) return "/me";
-  try {
-    const u = new URL(raw, location.origin);
-    return u.origin === location.origin ? u.pathname + u.search : "/me";
-  } catch {
-    return "/me";
-  }
-}
 
 const codeOf = (e: unknown) => (e as { code?: string }).code ?? "generic";
 const CANCELLED = new Set(["auth/popup-closed-by-user", "auth/cancelled-popup-request", "auth/user-cancelled"]);
@@ -46,7 +35,8 @@ function hadRedirect() {
 function LoginInner() {
   const { t, user, ready } = useApp();
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
+  // The tested check in lib/signin: the local copy let a same-origin "//host" path through.
+  const next = safeNext(useSearchParams().get("next"), location.origin);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
