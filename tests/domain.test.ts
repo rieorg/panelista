@@ -2,6 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { deadlineEnd, identityChanged, looksLikeSecret, rankScore, requestId, reviewId, safePhoto, sideOf, transition, type Action, type RequestLike, type RequestStatus, type Side } from "../src/lib/domain.ts";
+import { safeNext } from "../src/lib/signin.ts";
 import { errorKey, STRINGS, translate } from "../src/lib/i18n.ts";
 import { ISO_ITEM_IDS, tabulate, toTsv } from "../src/lib/iso25010.ts";
 import { sniff } from "../worker/src/sniff.ts";
@@ -150,4 +151,22 @@ test("only a Google account photo is kept as an avatar", () => {
   // The photo in a sign-in token is whatever the user last set with updateProfile().
   for (const bad of [undefined, null, "", 5, "https://evil.example/track.gif", "http://lh3.googleusercontent.com/a/x", "https://lh3.googleusercontent.com.evil.example/a", "https://lh3.googleusercontent.com", "data:image/svg+xml,<svg onload=alert(1)>", "javascript:alert(1)", " https://lh3.googleusercontent.com/a/x"])
     assert.equal(safePhoto(bad), "", String(bad));
+});
+
+test("after sign-in: ?next= only ever leads to a path on this site", () => {
+  const site = "https://panelista.vercel.app";
+  const go = (raw: string | null) => safeNext(raw, site);
+  assert.equal(go(null), "/me");
+  assert.equal(go(""), "/me");
+  assert.equal(go("/inbox/p1_E?tab=chat"), "/inbox/p1_E?tab=chat");
+  assert.equal(go("/p/abc"), "/p/abc");
+  for (const raw of ["https://evil.example/", "//evil.example", "/\\evil.example", "\\\\evil.example", "javascript:alert(1)", "data:text/html,x", "https://panelista.vercel.app.evil.example/", "https://panelista.vercel.app@evil.example/"])
+    assert.equal(go(raw), "/me", raw);
+  // Same origin, but the path itself starts with "//": handed to the router it means another host.
+  for (const raw of ["https://panelista.vercel.app//evil.example", "/x/..//evil.example", "/\t/evil.example", "https://panelista.vercel.app///evil.example/a?b=1"]) {
+    const next = go(raw);
+    assert.equal(new URL(next, `${site}/login`).origin, site, `${raw} -> ${next}`);
+    assert.match(next, /^\/(?!\/)/, raw);
+  }
+  assert.equal(go("https://panelista.vercel.app//evil.example"), "/evil.example");
 });
