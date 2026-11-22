@@ -156,16 +156,18 @@ export async function requireNoPendingReview(uid: string) {
 }
 
 /**
- * Fixed-window daily limit per user and bucket, stored in Firestore.
+ * Fixed-window daily limit per user and bucket, stored in Firestore. `sharedPerDay` adds one ceiling for all
+ * callers of the bucket together, checked in the same transaction: once either is reached, nothing is written.
  * ponytail: one doc write per call; move to Upstash/Workers KV if write volume matters.
  */
-export async function rateLimit(uid: string, bucket: string, perDay: number) {
+export async function rateLimit(uid: string, bucket: string, perDay: number, sharedPerDay?: number) {
   const day = new Date().toISOString().slice(0, 10);
-  const ref = db().doc(`ratelimits/${uid}_${bucket}_${day}`);
+  const limits: [string, number][] = [[uid, perDay]];
+  if (sharedPerDay !== undefined) limits.push(["all", sharedPerDay]);
+  const refs = limits.map(([who]) => db().doc(`ratelimits/${who}_${bucket}_${day}`));
   await db().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const n = (snap.get("n") as number | undefined) ?? 0;
-    if (n >= perDay) throw new HttpError(429, "rate-limited");
-    tx.set(ref, { n: n + 1, expireAt: new Date(Date.now() + 2 * 864e5) }, { merge: true });
+    const counts = (await tx.getAll(...refs)).map((snap) => (snap.get("n") as number | undefined) ?? 0);
+    if (counts.some((n, i) => n >= limits[i][1])) throw new HttpError(429, "rate-limited");
+    counts.forEach((n, i) => tx.set(refs[i], { n: n + 1, expireAt: new Date(Date.now() + 2 * 864e5) }, { merge: true }));
   });
 }
