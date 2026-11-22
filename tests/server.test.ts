@@ -80,6 +80,12 @@ test("errors map to stable codes and never leak internals", async (t) => {
   const crash = await call(open(async () => Promise.reject(new Error("connect ECONNREFUSED db-password=hunter2"))), post());
   assert.deepEqual(crash, { status: 500, json: { error: "server" } });
   assert.equal(logged.mock.callCount(), 1, "the real error goes to the server log only");
+
+  // A SyntaxError that is not the caller's body (an upstream answering with HTML, a broken service-account
+  // env var) is a server fault. It used to go back as 400 "bad-json" and never reached the log.
+  const upstream = await call(open(async () => JSON.parse("<html>502 Bad Gateway</html>")), post());
+  assert.deepEqual(upstream, { status: 500, json: { error: "server" } });
+  assert.equal(logged.mock.callCount(), 2);
 });
 
 test("request bodies are capped at 20,000 characters", async () => {
@@ -98,8 +104,8 @@ test("cron: only the exact Bearer secret gets in, and an unset secret lets nobod
     process.env.CRON_SECRET = "s3cret-value";
     for (const a of [undefined, "", "Bearer ", "Bearer s3cret-valuE", "Bearer s3cret-value!", "Bearer s3cret-valu", "bearer s3cret-value", "s3cret-value", "Basic s3cret-value"])
       assert.deepEqual(await hit(a), { status: 401, json: { error: "unauthorized" } }, `header ${a}`);
-    // The right secret passes the gate (there is no database in unit tests, so the run itself then fails).
-    assert.notEqual((await hit("Bearer s3cret-value")).status, 401);
+    // The right secret passes the gate. There is no database in unit tests, so the run itself then fails: a 500.
+    assert.deepEqual(await hit("Bearer s3cret-value"), { status: 500, json: { error: "server" } });
   } finally {
     if (before === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = before;

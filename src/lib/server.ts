@@ -82,7 +82,7 @@ async function checkAppCheck(req: Request) {
 
 type Handler = (req: Request, ctx: { params: Promise<Record<string, string>> }) => Promise<unknown>;
 
-/** Wraps a route handler: origin + App Check, JSON body errors, typed HTTP errors. */
+/** Wraps a route handler: origin + App Check, typed HTTP errors, everything else a logged 500. */
 export function route(fn: Handler, opts: { appCheck?: boolean } = {}) {
   return async (req: Request, ctx: { params: Promise<Record<string, string>> }) => {
     try {
@@ -93,7 +93,6 @@ export function route(fn: Handler, opts: { appCheck?: boolean } = {}) {
     } catch (e) {
       if (e instanceof HttpError) return NextResponse.json({ error: e.code }, { status: e.status });
       if (e instanceof ZodError) return NextResponse.json({ error: "invalid", issues: e.issues.slice(0, 5) }, { status: 400 });
-      if (e instanceof SyntaxError) return NextResponse.json({ error: "bad-json" }, { status: 400 });
       console.error(e);
       return NextResponse.json({ error: "server" }, { status: 500 });
     }
@@ -104,7 +103,13 @@ export async function body(req: Request) {
   // Measure the actual body: chunked requests have no Content-Length.
   const raw = await req.text();
   if (raw.length > 20_000) throw new HttpError(413, "too-large");
-  return JSON.parse(raw);
+  // Only the caller's own body is "bad-json". A SyntaxError from anywhere else (a missing service account,
+  // an upstream that answers with HTML) is ours: it must reach the log as a 500, not pass as a client mistake.
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new HttpError(400, "bad-json");
+  }
 }
 
 /**
