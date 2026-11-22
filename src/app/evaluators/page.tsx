@@ -34,7 +34,9 @@ export default function EvaluatorsPage() {
   const [f, setF] = useState(NONE);
   const [sort, setSort] = useState<Sort>("rank");
   const [shownN, setShownN] = useState(PAGE);
-  const set = <K extends keyof typeof NONE>(k: K, v: (typeof NONE)[K]) => {
+  // Phones: the six filters sit behind one button, so the list starts on the first screen.
+  const [open, setOpen] = useState(false);
+  const set =<K extends keyof typeof NONE>(k: K, v: (typeof NONE)[K]) => {
     setF((x) => ({ ...x, [k]: v }));
     setShownN(PAGE);
   };
@@ -45,24 +47,36 @@ export default function EvaluatorsPage() {
 
   const matches = findEvaluators(all ?? [], f, sort);
   const filtered = JSON.stringify(f) !== JSON.stringify(NONE);
+  // What the button counts: filters that are on. The search box is always in view, so it is not one of them.
+  const on = Object.entries(f).filter(([k, v]) => k !== "search" && v).length;
 
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-2xl font-bold">{t("evaluatorsTitle")}</h1>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input className="input sm:flex-1" type="search" placeholder={t("searchPh")} value={f.search} onChange={(e) => set("search", e.target.value)} aria-label={t("searchPh")} />
-        <label className="flex items-center gap-2 text-sm sm:w-64">
-          <span className="shrink-0 text-muted">{t("sortBy")}</span>
-          <select className="input" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-            {(Object.keys(EVALUATOR_SORTS) as Sort[]).map((s) => (
-              <option key={s} value={s}>
-                {t(`sort_${s}`)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex gap-2 sm:w-64">
+          <button type="button" className="btn-ghost shrink-0 sm:hidden" aria-expanded={open} aria-controls="filters" onClick={() => setOpen(!open)}>
+            <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+              <path d="M4 7h16M7 12h10M10 17h4" />
+            </svg>
+            {t("filters")}
+            {on > 0 && <span className="rounded-full bg-brand px-1.5 text-xs text-white">{on}</span>}
+          </button>
+          {/* Beside the button on phones the select names the order by itself; the label is for screen readers there. */}
+          <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+            <span className="shrink-0 text-muted max-sm:sr-only">{t("sortBy")}</span>
+            <select className="input" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+              {(Object.keys(EVALUATOR_SORTS) as Sort[]).map((s) => (
+                <option key={s} value={s}>
+                  {t(`sort_${s}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+      <div id="filters" className={`grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center ${open ? "grid" : "hidden"}`}>
         <select className="input sm:w-auto" value={f.cat} onChange={(e) => set("cat", e.target.value)} aria-label={t("allCategories")}>
           <option value="">{t("allCategories")}</option>
           {CATEGORIES.map((c) => (

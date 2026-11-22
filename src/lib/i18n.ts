@@ -71,6 +71,7 @@ export const STRINGS = {
   ratingAtLeast: ["{n}+ stars", "{n}+ stars"],
   anyMode: ["Online o on-site", "Online or on-site"],
   resultsCount: ["{n} evaluator{s}", "{n} evaluator{s}"],
+  filters: ["Filters", "Filters"],
   clearFilters: ["I-clear ang filters", "Clear filters"],
   noMatch: ["Walang swak sa filters mo. Try mo bawasan.", "No evaluators match these filters. Try removing some."],
   noEvaluators: ["Wala pang evaluator dito. I-share ang Panelista sa IT friends mo!", "No evaluators here yet. Share Panelista with your IT friends!"],
