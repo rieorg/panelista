@@ -48,6 +48,7 @@ npm run lint
 npm run typegen && npx tsc --noEmit
 npm test
 npm run test:emu       # optional: security rules and API handlers on the emulators (Java 21+)
+npm run test:worker    # optional: the Worker's upload endpoints (first: npm ci --prefix worker)
 ```
 
 GitHub Actions runs the first three on every pull request. `npm run test:emu`
