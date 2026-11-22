@@ -34,7 +34,8 @@ export function ReportButton({ targetUid }: { targetUid: string }) {
 
   return (
     <>
-      <button className="self-start text-xs text-muted underline hover:text-red-700" onClick={() => setOpen(true)}>
+      {/* Quiet text, full 44px target: -my-2 keeps the card as tall as it was. */}
+      <button className="-my-2 inline-flex min-h-11 min-w-11 items-center self-start text-xs text-muted underline hover:text-red-700" onClick={() => setOpen(true)}>
         {t("report")}
       </button>
       {open && (
@@ -43,10 +44,10 @@ export function ReportButton({ targetUid }: { targetUid: string }) {
             <p>{t("reportSent")}</p>
           ) : (
             <div className="flex flex-col gap-3">
-              <fieldset className="flex flex-col gap-2">
+              <fieldset className="flex flex-col">
                 {REASONS.map(([v, k]) => (
-                  <label key={v} className="flex items-center gap-2 text-sm">
-                    <input type="radio" name="reason" value={v} checked={reason === v} onChange={() => setReason(v)} className="accent-brand" />
+                  <label key={v} className="check">
+                    <input type="radio" name="reason" value={v} checked={reason === v} onChange={() => setReason(v)} className="h-5 w-5 shrink-0 accent-brand" />
                     {t(k)}
                   </label>
                 ))}

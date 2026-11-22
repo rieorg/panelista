@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { collection, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useApp } from "./app-provider";
@@ -165,16 +165,33 @@ export function Spinner() {
   );
 }
 
+/**
+ * A native modal dialog. showModal() brings what the hand-built overlay lacked: focus moves in and cannot
+ * tab out to the page behind, Escape closes it, and closing puts focus back on the button that opened it.
+ * A bottom sheet on phones, centered from 640px.
+ */
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   const { t } = useApp();
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const ref = useRef<HTMLDialogElement>(null);
+  // A layout effect, so close() runs while the dialog is still in the page: that is when the browser returns focus.
+  useLayoutEffect(() => {
+    const d = ref.current!;
+    d.showModal();
+    return () => d.close();
+  }, []);
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+    <dialog
+      ref={ref}
+      aria-label={title}
+      // Escape (and Back on Android) asks to close. Listening to "cancel" and not "close": our own close() above
+      // fires "close" too, which in development (effects run twice) would shut the dialog as it opens.
+      onCancel={onClose}
+      // The backdrop is the dialog element itself, so a click whose target is the dialog was outside the box.
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="m-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl bg-white text-ink backdrop:bg-ink/40 max-sm:mb-0 max-sm:max-w-none sm:rounded-2xl"
+    >
+      {/* The padding lives here and not on the dialog, or a click on the padding would count as the backdrop. */}
+      <div className="p-5">
         <div className="mb-3 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold">{title}</h2>
           <button onClick={onClose} aria-label={t("close")} className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface">
@@ -185,7 +202,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
         </div>
         {children}
       </div>
-    </div>
+    </dialog>
   );
 }
 
