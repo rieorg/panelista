@@ -1,6 +1,6 @@
 import { body, db, FieldValue, rateLimit, requireUser, route } from "@/lib/server";
 import { profileSchema } from "@/lib/schemas";
-import { identityChanged, rankFor, rankScore } from "@/lib/domain";
+import { identityChanged, rankFor, rankScore, safePhoto } from "@/lib/domain";
 
 // Upsert the caller's own profile. Server-owned fields (ratings, verified,
 // counters, banned) are never taken from the client.
@@ -14,7 +14,7 @@ export const PUT = route(async (req) => {
     const base = {
       ...input,
       skillsLower: input.skills.map((s) => s.toLowerCase()),
-      photoURL: user.picture ?? "",
+      photoURL: safePhoto(user.picture),
       // Public Admin badge mirrors the custom claim; clients can never write it (rules deny profile writes).
       isAdmin: user.admin === true,
       updatedAt: FieldValue.serverTimestamp(),

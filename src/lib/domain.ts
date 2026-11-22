@@ -117,6 +117,12 @@ export function identityChanged(a: Record<string, unknown>, b: Record<string, un
 /** A project's deadline is the end of that calendar day in the Philippines (UTC+8, no daylight saving). */
 export const deadlineEnd = (isoDate: string) => new Date(`${isoDate}T23:59:59+08:00`);
 
+/**
+ * The avatar comes from the sign-in token, and any signed-in user can point their own token's photo anywhere
+ * (updateProfile in the Firebase client). Only a Google account photo is kept; anything else falls back to the generated face.
+ */
+export const safePhoto = (url: unknown): string => (typeof url === "string" && url.startsWith("https://lh3.googleusercontent.com/") ? url : "");
+
 export function average(sum: number, count: number): number {
   return count ? Math.round((sum / count) * 10) / 10 : 0;
 }

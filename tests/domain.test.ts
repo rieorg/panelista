@@ -1,7 +1,7 @@
 // Request rules, ranking and copy checks beyond tests/logic.test.ts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deadlineEnd, identityChanged, looksLikeSecret, rankScore, requestId, reviewId, sideOf, transition, type Action, type RequestLike, type RequestStatus, type Side } from "../src/lib/domain.ts";
+import { deadlineEnd, identityChanged, looksLikeSecret, rankScore, requestId, reviewId, safePhoto, sideOf, transition, type Action, type RequestLike, type RequestStatus, type Side } from "../src/lib/domain.ts";
 import { errorKey, STRINGS, translate } from "../src/lib/i18n.ts";
 import { ISO_ITEM_IDS, tabulate, toTsv } from "../src/lib/iso25010.ts";
 import { sniff } from "../worker/src/sniff.ts";
@@ -142,4 +142,12 @@ test("a deadline is the last second of that day in the Philippines, whatever the
   const now = Date.parse("2026-11-22T19:30:00Z");
   assert.ok(deadlineEnd("2026-11-22").getTime() < now, "yesterday in Manila is past");
   assert.ok(deadlineEnd("2026-11-23").getTime() > now, "today in Manila is still open until midnight there");
+});
+
+test("only a Google account photo is kept as an avatar", () => {
+  const google = "https://lh3.googleusercontent.com/a/ACg8ocK-abc=s96-c";
+  assert.equal(safePhoto(google), google);
+  // The photo in a sign-in token is whatever the user last set with updateProfile().
+  for (const bad of [undefined, null, "", 5, "https://evil.example/track.gif", "http://lh3.googleusercontent.com/a/x", "https://lh3.googleusercontent.com.evil.example/a", "https://lh3.googleusercontent.com", "data:image/svg+xml,<svg onload=alert(1)>", "javascript:alert(1)", " https://lh3.googleusercontent.com/a/x"])
+    assert.equal(safePhoto(bad), "", String(bad));
 });
