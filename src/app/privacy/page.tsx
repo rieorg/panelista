@@ -6,7 +6,7 @@ export default function Privacy() {
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-4 py-4 text-[15px] leading-relaxed">
       <h1 className="text-3xl font-bold">Privacy</h1>
-      <p className="text-muted">Last updated: October 20, 2026</p>
+      <p className="text-muted">Last updated: November 24, 2026</p>
       <p>
         Panelista is a free community app that connects capstone students with professionals who volunteer to evaluate their
         systems. We follow the Philippine Data Privacy Act of 2012 (RA 10173) and collect only what the app needs.
@@ -21,6 +21,10 @@ export default function Privacy() {
         <li>What you type into your profile, projects, chats and reviews. Profiles, projects and reviews are public.</li>
         <li>Chats are visible only to the two people in the request (and to the admin when a report is investigated).</li>
         <li>Verification files you upload. Only the admin can open them, and they are deleted after review.</li>
+        <li>
+          Visit counts with no name on them: which kind of page was opened, where the visit came from (Facebook or Google, for
+          example) and whether it was a phone or a computer. No cookie, IP address or account is saved with them.
+        </li>
       </ul>
       <h2 className="text-xl font-bold">What we never do</h2>
       <ul className="list-disc pl-6">

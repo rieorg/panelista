@@ -4,6 +4,7 @@
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { deleteApp } from "firebase-admin/app";
+import type { Summary } from "../../src/lib/analytics.ts";
 
 const projectId = process.env.GCLOUD_PROJECT ?? "";
 const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "";
@@ -32,6 +33,8 @@ const api = {
   cron: (await import("../../src/app/api/cron/route.ts")).POST,
   clientErrors: (await import("../../src/app/api/client-errors/route.ts")).POST,
   evaluators: (await import("../../src/app/api/evaluators/route.ts")).GET,
+  visit: (await import("../../src/app/api/visits/route.ts")).POST,
+  visitNumbers: (await import("../../src/app/api/visits/route.ts")).GET,
 };
 
 type Handler = (req: Request, ctx: { params: Promise<Record<string, string>> }) => Promise<Response>;
@@ -311,4 +314,47 @@ test("public lists: card fields only, no banned accounts, no closed or filled pr
   const projects = (await (await api.projectList(new Request("https://panelista.test/api/projects"))).json()) as Record<string, unknown>[];
   assert.deepEqual(projects.map((p) => p.title), ["Second capstone project"], "the filled one and the banned owner's are not listed");
   for (const k of ["ownerUid", "formUrl", "stack", "status"]) assert.equal(k in projects[0], false, k);
+});
+
+test("visits: one counter document a day under fixed names, a ceiling per address and per day, and the numbers are the admin's", async () => {
+  const today = manila(0);
+  const beacon = (data: unknown, ip = "203.0.113.20", handler: Handler = api.visit) => call(handler, null, data, {}, { "x-forwarded-for": `${ip}, 10.0.0.1` });
+  const numbers = async (who: string | null) => {
+    const res = await api.visitNumbers(new Request("https://panelista.test/api/visits", { headers: who ? { authorization: `Bearer ${who}` } : {} }), { params: Promise.resolve({}) });
+    return { status: res.status, ...((await res.json()) as Partial<Summary> & { error?: string }) };
+  };
+
+  assert.deepEqual(await beacon({ page: "home", entry: { source: "facebook", device: "phone" }, uid: "stu", ua: "Mozilla/5.0" }), { status: 200, ok: true });
+  assert.deepEqual(await beacon({ page: "evaluators" }), { status: 200, ok: true }, "the same session opening a second page group");
+  assert.equal((await beacon({ page: "/e/eva" })).error, "invalid", "a path is not a page group");
+  assert.equal((await beacon({ page: "home", entry: { source: "evil.example", device: "phone" } })).error, "invalid");
+  // All that two page views left behind: one document of counters. No address, user agent, id or event.
+  assert.deepEqual(await get(`stats/${today}`), { visits: 1, pages: { home: 1, evaluators: 1 }, sources: { facebook: 1 }, devices: { phone: 1 } });
+  assert.equal((await db().collection("stats").count().get()).data().count, 1);
+  assert.equal((await db().collection("ratelimits").get()).docs.some((d) => d.id.includes("203.0.113.20")), false, "the address is counted in memory, not in Firestore");
+
+  assert.deepEqual(await numbers(null), { status: 401, error: "no-token" });
+  assert.deepEqual(await numbers(S), { status: 403, error: "not-admin" });
+  const n = await numbers(A);
+  assert.equal(n.status, 200);
+  assert.deepEqual([n.visits, n.days?.at(-1)], [{ today: 1, d7: 1, d30: 1 }, { date: today, visits: 1 }]);
+  assert.deepEqual(n.pages, [{ id: "home", today: 1, d7: 1, d30: 1 }, { id: "evaluators", today: 1, d7: 1, d30: 1 }]);
+  assert.deepEqual([n.sources?.[0], n.devices?.[0]], [{ id: "facebook", n: 1 }, { id: "phone", n: 1 }]);
+  // The rest comes from what the earlier tests stored: six accounts, five profiles, one request accepted, completed and rated.
+  const funnel = Object.fromEntries((n.funnel ?? []).map((f) => [f.id, f.n]));
+  assert.deepEqual([funnel.visits, funnel.signups, funnel.profiles, funnel.accepted, funnel.completed, funnel.rated], [1, 6, 5, 1, 1, 1]);
+  assert.deepEqual(n.totals, { accounts: 6, profiles: 5, evaluators: 1, projects: 3, requests: 3, completed: 1, reviews: 1, errors: 1, errors7: 1 });
+  assert.deepEqual(n.rates, { completion: 1 / 3, answer: 1 / 2 }, "eva answered one invite and let one expire");
+  assert.deepEqual(n.active, { students7: 1, students30: 1, evaluators7: 1, evaluators30: 1 });
+
+  // One address: 300 counted in a day, then nothing more is written for it.
+  for (let i = 0; i < 300; i++) await beacon({ page: "other" }, "198.51.100.77");
+  assert.deepEqual(await beacon({ page: "other" }, "198.51.100.77"), { status: 429, error: "rate-limited" });
+  assert.equal((await get(`stats/${today}`)).pages.other, 300);
+
+  // Everyone together: 5000 in a day. A fresh copy of the route (a second server instance) reads the day's count first.
+  await db().doc(`stats/${today}`).set({ pages: { other: 5000 } }, { merge: true });
+  const another = (await import("../../src/app/api/visits/route.ts?instance=2")).POST;
+  assert.deepEqual(await beacon({ page: "home" }, "203.0.113.99", another), { status: 429, error: "rate-limited" });
+  assert.equal((await get(`stats/${today}`)).pages.home, 1, "past the day's ceiling nothing is written");
 });

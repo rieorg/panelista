@@ -3,6 +3,7 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import { CustomProvider, getToken, initializeAppCheck, type AppCheck } from "firebase/app-check";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { deviceOf, pageOf, sourceOf } from "./analytics";
 
 // Local dev against the Firebase emulators (CONTRIBUTING.md): no real project, no App Check.
 const EMULATORS = process.env.NEXT_PUBLIC_EMULATORS === "1";
@@ -124,6 +125,25 @@ export function reportError(e: Error & { digest?: string }) {
       uid: auth.currentUser?.uid ?? "",
     }),
   }).catch(() => {});
+}
+
+/**
+ * Counts a visit: one beacon per browser session per page group to /api/visits, which adds one to that day's
+ * totals. The session's first beacon also says where the visit came from and on what kind of device. It carries
+ * no id and sets no cookie, and a reload sends nothing. Never throws. With sessionStorage blocked nothing is
+ * sent at all: without it every page change would count again.
+ */
+export function reportVisit(path: string) {
+  try {
+    const page = pageOf(path);
+    const seen = sessionStorage.getItem("visits")?.split(",") ?? [];
+    if (seen.includes(page)) return;
+    sessionStorage.setItem("visits", [...seen, page].join(","));
+    const entry = seen.length
+      ? undefined
+      : { source: sourceOf(location.search, document.referrer, navigator.userAgent, location.host), device: deviceOf(Math.min(screen.width, screen.height), matchMedia("(pointer: coarse)").matches) };
+    fetch("/api/visits", { method: "POST", keepalive: true, headers: { "content-type": "application/json" }, body: JSON.stringify({ page, entry }) }).catch(() => {});
+  } catch {}
 }
 
 /** Calls the Cloudflare Worker (file uploads) with the user's ID token and App Check token. */

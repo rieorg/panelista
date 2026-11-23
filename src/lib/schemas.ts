@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEVICES, PAGES, SOURCES } from "./analytics";
 import { CATEGORIES } from "./domain";
 import { ISO_ITEM_IDS, type IsoItemId } from "./iso25010";
 
@@ -97,6 +98,14 @@ export const adminVerifySchema = z.object({
 });
 
 export const adminBanSchema = z.object({ uid: id(128), banned: z.boolean() });
+
+// The visit beacon (POST /api/visits). Every value is one of a fixed list, so a browser cannot name a new
+// counter or put a URL, an id or any other text into the stats.
+export const visitSchema = z.object({
+  page: z.enum(PAGES),
+  // Sent once per browser session, with its first beacon: where the visit came from and on what.
+  entry: z.object({ source: z.enum(SOURCES), device: z.enum(DEVICES) }).optional(),
+});
 
 export const clientErrorSchema = z.object({
   message: z.string().max(500),

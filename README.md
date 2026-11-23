@@ -69,6 +69,7 @@ the app. The Worker uses its own service account with only `roles/datastore.user
 | `verifications/{uid}` | owner, admin | API |
 | `reports/*` | admin | API |
 | `ratelimits/*` | nobody | API |
+| `stats/{YYYY-MM-DD}` | admin, through `GET /api/visits` | API (`POST /api/visits`): visit counters only, one document per Manila day |
 
 Request lifecycle (`src/lib/domain.ts`, tested in `tests/logic.test.ts`):
 `pending -> accepted | declined | cancelled | expired`, `accepted -> completed | cancelled`.

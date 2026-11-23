@@ -159,11 +159,13 @@ const NO_LOGIN: Record<string, string> = {
   "appcheck/route.ts": "trades a Turnstile pass for an App Check token, before any sign-in",
   "client-errors/route.ts": "crash reports: the crash may be in sign-in itself; limited per IP instead",
   "cron/route.ts": "the Worker's hourly call, gated by CRON_SECRET",
+  "visits/route.ts": "the visit beacon: most visitors are not signed in; whitelisted counters only",
 };
 const NO_DAILY_LIMIT: Record<string, string> = {
   "appcheck/route.ts": "writes nothing",
   "cron/route.ts": "the Worker's hourly call, gated by CRON_SECRET",
   "admin/route.ts": "admins only",
+  "visits/route.ts": "its own ceilings, per address in memory and per day: rateLimit() would triple the writes of every page view",
 };
 
 test("every state-changing API route is wrapped, signed-in and rate limited, or listed as an exception", () => {

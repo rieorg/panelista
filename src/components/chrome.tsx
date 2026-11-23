@@ -1,8 +1,9 @@
 "use client";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, reportVisit } from "@/lib/firebase";
 import { useApp } from "./app-provider";
 import { AdminBadge, Avatar, isUnread, useInbox } from "./ui";
 
@@ -17,8 +18,13 @@ export function Logo() {
 }
 
 export function Header() {
-  const { user, profile, isAdmin, lang, setLang, t } = useApp();
+  const { user, profile, isAdmin, ready, lang, setLang, t } = useApp();
   const path = usePathname();
+  // Visit counts for the admin Analytics tab. It waits for sign-in to settle so admins can be left out:
+  // they are here every day, and on a small site that would be most of the visits.
+  useEffect(() => {
+    if (ready && !isAdmin) reportVisit(path);
+  }, [path, ready, isAdmin]);
   const inbox = useInbox(user?.uid);
   const unread = user && inbox ? inbox.filter((r) => isUnread(r, user.uid)).length : 0;
   // Rating the evaluator is required (the API blocks new asks until then), so keep it in view.
@@ -39,7 +45,8 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur print:hidden">
       <div className={`mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 pt-1.5 sm:pb-1.5 ${inThread ? "pb-1.5" : ""}`}>
         <Logo />
-        {/* Phones: a second row where every link is an equal, 44 px tall share of the width. */}
+        {/* Phones: a second row where every link is an equal, 44 px tall share of the width. The tighter padding
+            there keeps an admin's four links (plus an unread badge) inside a 320 px screen. */}
         <nav aria-label="Main" className={`order-3 w-full gap-1 pb-1.5 sm:order-none sm:flex sm:w-auto sm:pb-0 ${inThread ? "hidden" : "flex"}`}>
           {links.map((l) => {
             const active = path === l.href.split("?")[0];
@@ -48,7 +55,7 @@ export function Header() {
                 key={l.href}
                 href={l.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-11 flex-1 items-center justify-center rounded-lg px-3 text-sm font-medium whitespace-nowrap sm:flex-none ${active ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-surface hover:text-ink"}`}
+                className={`flex min-h-11 flex-1 items-center justify-center rounded-lg px-2 text-sm font-medium whitespace-nowrap sm:flex-none sm:px-3 ${active ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-surface hover:text-ink"}`}
               >
                 {l.label}
                 {"badge" in l && l.badge ? (

@@ -194,6 +194,8 @@ test("verification files list, reports, rate limits and crash logs stay private"
     await denied(getDoc(doc(db, "ratelimits/S_request_2026-01-01")), "rate limit counters");
     await denied(setDoc(doc(db, "ratelimits/S_request_2026-01-01"), { n: 0 }), "resetting a rate limit");
     await denied(getDoc(doc(db, "clientErrors/c1")), "crash logs");
+    await denied(getDoc(doc(db, "stats/2026-01-01")), "visit counts: even the admin reads them through the API");
+    await denied(setDoc(doc(db, "stats/2026-01-01"), { visits: 9 }), "adding visits from a browser");
     await denied(setDoc(doc(db, "anything/else"), { x: 1 }), "a collection the rules do not name");
   }
   // A claim only counts when it is exactly `admin: true` on the token.

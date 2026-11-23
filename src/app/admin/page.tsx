@@ -1,12 +1,14 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { collection, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { api, db, worker } from "@/lib/firebase";
 import { useApp } from "@/components/app-provider";
 import { RequireProfile } from "@/components/guard";
 import { PanySays } from "@/components/pany";
 import { Empty, ErrorText, Spinner } from "@/components/ui";
+import { Analytics } from "./analytics";
 
 interface Verification {
   uid: string;
@@ -72,7 +74,8 @@ function Proof({ file }: { file: Verification["files"][number] }) {
   );
 }
 
-function Admin() {
+/** The moderation queue: verification applications and open reports. */
+function Queue() {
   const { isAdmin, t } = useApp();
   const [vs, setVs] = useState<Verification[] | null>(null);
   const [reports, setReports] = useState<Report[] | null>(null);
@@ -100,16 +103,6 @@ function Admin() {
       b();
     };
   }, [isAdmin]);
-
-  // The one admin screen other people can land on, so it follows their language. The queue itself stays English.
-  if (!isAdmin)
-    return (
-      <Empty pose="oops" title={t("adminOnly")} text={t("adminOnlyText")}>
-        <Link href="/" className="btn-ghost">
-          {t("backHome")}
-        </Link>
-      </Empty>
-    );
 
   /** One admin call. Gives back the response, or null after showing the error. */
   async function run(payload: object) {
@@ -154,7 +147,6 @@ function Admin() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-2xl font-bold">Admin</h1>
       <ErrorText code={err} />
       {outcome && (
         <PanySays tone={outcome.kind === "stale" ? "tip" : "say"} role="status">
@@ -248,6 +240,46 @@ function Admin() {
           </section>
         </div>
       )}
+    </div>
+  );
+}
+
+const TABS = { queue: "Queue", analytics: "Analytics" } as const;
+type Tab = keyof typeof TABS;
+
+function Admin() {
+  const { isAdmin, t } = useApp();
+  const router = useRouter();
+  const tab: Tab = useSearchParams().get("tab") === "analytics" ? "analytics" : "queue";
+
+  // The one admin screen other people can land on, so it follows their language. Everything past it stays English.
+  if (!isAdmin)
+    return (
+      <Empty pose="oops" title={t("adminOnly")} text={t("adminOnlyText")}>
+        <Link href="/" className="btn-ghost">
+          {t("backHome")}
+        </Link>
+      </Empty>
+    );
+
+  return (
+    <div className="flex flex-col gap-5">
+      <h1 className="text-2xl font-bold">Admin</h1>
+      {/* The same strip as the account page (/me): it bleeds to the screen edge on phones. */}
+      <div role="tablist" className="-mx-4 flex overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0">
+        {(Object.keys(TABS) as Tab[]).map((k) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={tab === k}
+            onClick={() => router.replace(k === "queue" ? "/admin" : `/admin?tab=${k}`)}
+            className={`min-h-11 flex-1 border-b-2 px-3 text-sm font-semibold whitespace-nowrap sm:flex-none sm:px-4 ${tab === k ? "border-brand text-brand" : "border-transparent text-muted hover:text-ink"}`}
+          >
+            {TABS[k]}
+          </button>
+        ))}
+      </div>
+      {tab === "analytics" ? <Analytics /> : <Queue />}
     </div>
   );
 }
