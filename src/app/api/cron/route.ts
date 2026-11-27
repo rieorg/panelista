@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import type { DocumentReference, Timestamp } from "firebase-admin/firestore";
+import type { DocumentReference, Timestamp } from "@/lib/firestore";
 import { db, FieldValue, HttpError, route } from "@/lib/server";
 import { AWAY_AFTER, PENDING_TTL_DAYS, rankFor } from "@/lib/domain";
 import { mails, notify, type MailReq, type Note } from "@/lib/mail";

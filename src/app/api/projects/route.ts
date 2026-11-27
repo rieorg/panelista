@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "@/lib/firestore";
 import { body, db, FieldValue, HttpError, memo, onlyPlainUrl, rateLimit, requireNoPendingReview, requireUser, route } from "@/lib/server";
 import { projectSchema } from "@/lib/schemas";
 import { deadlineEnd, looksLikeSecret } from "@/lib/domain";

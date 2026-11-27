@@ -2,7 +2,7 @@ import "server-only";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAppCheck } from "firebase-admin/app-check";
 import { getAuth, type DecodedIdToken } from "firebase-admin/auth";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { db as firestore, FieldValue } from "@/lib/firestore";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -18,7 +18,7 @@ export function app() {
   return initializeApp({ credential: cert(sa), projectId: sa.project_id });
 }
 
-export const db = () => getFirestore(app());
+export const db = firestore;
 export const adminAuth = () => getAuth(app());
 export { FieldValue };
 

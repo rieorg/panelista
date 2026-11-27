@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "@/lib/firestore";
 import { db, memo, onlyPlainUrl } from "@/lib/server";
 
 // Public evaluator list for /evaluators, cached on Vercel's CDN. Before this, every

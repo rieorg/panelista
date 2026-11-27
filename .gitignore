@@ -70,3 +70,7 @@ worker/.dev.vars
 .claude/proven-config.json
 .claude/.proven-config-version
 .codex/
+
+# OpenNext build output (Cloudflare) and local wrangler state
+.open-next
+.wrangler

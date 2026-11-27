@@ -47,6 +47,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: {
+    // The server build picks the Node Firestore SDK (gRPC, protobuf codegen), which Workers cannot load. Pages only import
+    // it for hooks and types and never query during SSR, so the browser build (what the client already gets) is safe there.
+    resolveAlias: {
+      "@firebase/firestore": "./node_modules/@firebase/firestore/dist/index.esm.js",
+    },
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

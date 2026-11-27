@@ -2,7 +2,7 @@ import { body, db, FieldValue, HttpError, rateLimit, requireNoPendingReview, req
 import { actionSchema, id as idSchema } from "@/lib/schemas";
 import { projectStatusFor, rankFor, sideOf, transition, type RequestLike } from "@/lib/domain";
 import { mails, notify, type MailReq } from "@/lib/mail";
-import type { Timestamp } from "firebase-admin/firestore";
+import type { Timestamp } from "@/lib/firestore";
 
 const SYSTEM_TEXT = { accepted: "accepted", declined: "declined", cancelled: "cancelled", completed: "completed" } as const;
 

@@ -1,4 +1,4 @@
-import { AggregateField, Timestamp, type Query } from "firebase-admin/firestore";
+import { AggregateField, Timestamp, type Query } from "@/lib/firestore";
 import { adminAuth, body, db, FieldValue, HttpError, memo, requireAdmin, route } from "@/lib/server";
 import { visitSchema } from "@/lib/schemas";
 import { dayKey, summarize, windowOf, type DayStats, type Thread } from "@/lib/analytics";
